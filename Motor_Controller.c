@@ -39,12 +39,12 @@ volatile int spiClkDiv = 2 ;                 // 20 MHz DAC clock
 volatile static int keep_moving = 0;
 
 // PWM setting variables
-int generate_period = 40000;
+int generate_period = 20000;
 //volatile static int pwm_on_time = 4000; 
 
 // string buffer
 char buffer[60];
-
+static volatile int st = 0;
 // == Timer 2 ISR =====================================================
 // keeps timing for PWM
 void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
@@ -98,9 +98,8 @@ static PT_THREAD (protothread_move(struct pt *pt))
         //ConfigIntTimer2(T2_INT_ON );
         
         PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-        
+        mPORTBToggleBits(BIT_15);
         //ConfigIntTimer2(T2_INT_OFF );
-        mPORTBToggleBits(BIT_9);
         stp1.dirMove = 1- stp1.dirMove;
         
     } // END WHILE(1)
@@ -191,7 +190,7 @@ int main(void)
     mPORTBClearBits(BIT_15);
     
     //setting direction pins for the motors
-    //stp1.DIR = BIT_9;
+    stp1.DIR = BIT_15;
     //stp2.DIR = BIT_1;
     //stp3.DIR = BIT_2;
     
@@ -201,7 +200,7 @@ int main(void)
     //stp3.dirMove = 0;
 
     //setting step ppins for motors
-    stp1.STP = BIT_15;
+    stp1.STP = BIT_9;
     //stp2.STP = BIT_1;
     //stp3.STP = BIT_2;
 
