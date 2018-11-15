@@ -2,8 +2,6 @@
 #include "config.h"
 // threading library
 #include "pt_cornell_1_2_1.h"
-#include "tft_master.h"
-#include "tft_gfx.h"
 // need for rand function
 #include <stdlib.h>
 #include <math.h>
@@ -38,30 +36,33 @@ volatile int spiClkDiv = 2 ;                 // 20 MHz DAC clock
 //keep stepping or not
 volatile static int keep_moving = 0;
 
-// PWM setting variables
+// frequency of motor stepping (max)
 int generate_period = 20000;
-//volatile static int pwm_on_time = 4000; 
 
-// string buffer
-char buffer[60];
-static volatile int st = 0;
 // == Timer 2 ISR =====================================================
 // keeps timing for PWM
 void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 {
+    
+    //move z first
     if(stp1.stpLeft > 0){
         mPORTBToggleBits(stp1.STP);
         stp1.stpLeft--;
     }
-//    if(stp2.stpLeft > 0){
-//        mPORTBToggleBits(stp2.STP);
-//        stp2.stpLeft--;
-//    }
-//    if(stp3.stpLeft > 0){
-//        mPORTBToggleBits(stp3.STP);
-//        stp3.stpLeft--;
-//    }
-    if(stp1.stpLeft <= 0 )//&&  stp2.stpLeft =< 0 && stp3.stpLeft =< 0)
+    
+    //otherwise move x and y
+    //tentative could maybe break into x and y separately
+    else {
+        if(stp2.stpLeft > 0){
+            mPORTBToggleBits(stp2.STP);
+            stp2.stpLeft--;
+        }
+        if(stp3.stpLeft > 0){
+            mPORTBToggleBits(stp3.STP);
+            stp3.stpLeft--;
+        }
+    }
+    if(stp1.stpLeft <= 0 &&  stp2.stpLeft <= 0 && stp3.stpLeft <= 0)
         keep_moving = 0;
     // clear the timer interrupt flag
     mT2ClearIntFlag();
@@ -90,17 +91,32 @@ static PT_THREAD (protothread_move(struct pt *pt))
     while(1) {
         
         stp1.stpLeft = 1000;
-        //stp2.stpLeft = 1000;
-        //stp3.stpLeft = 1000;
+        stp2.stpLeft = 1000;
+        stp3.stpLeft = 1000;
         
         //allowing the ISR to move the position
         keep_moving = 1;
-        //ConfigIntTimer2(T2_INT_ON );
         
+        //halting until the desired position is reached
         PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-        mPORTBToggleBits(BIT_15);
-        //ConfigIntTimer2(T2_INT_OFF );
+
+        //flipping directions for lols
         stp1.dirMove = 1- stp1.dirMove;
+        stp2.dirMove = 1- stp2.dirMove;
+        stp3.dirMove = 1- stp3.dirMove;
+        
+        //handling direction changes for stp1
+        if(stp1.dirMove == 1) mPORTBSetBits(stp1.DIR);
+        else mPORTBClearBits(stp1.DIR);
+        
+        //handling direction changes for stp1
+        if(stp2.dirMove == 1) mPORTBSetBits(stp2.DIR);
+        else mPORTBClearBits(stp2.DIR);
+        
+        //handling direction changes for stp1
+        if(stp3.dirMove == 1) mPORTBSetBits(stp3.DIR);
+        else mPORTBClearBits(stp3.DIR);
+        
         
     } // END WHILE(1)
     PT_END(pt);
@@ -114,22 +130,8 @@ static PT_THREAD (protothread_data(struct pt *pt))
 {
     PT_BEGIN(pt);
     while(1){
-        tft_fillScreen(ILI9340_BLACK);
-        // print steps left
-        tft_setCursor(20, 20);
-        tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-        sprintf(buffer, "Steps Left: %d", stp1.stpLeft);
-        tft_writeString(buffer);
-        
-        
-        //print direction of movement
-        tft_setCursor(20, 40);
-        tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-        sprintf(buffer, "Direction: %d", stp1.dirMove);
-        tft_writeString(buffer);
-        
-        
-        PT_YIELD_TIME_msec(100);
+
+        PT_YIELD_TIME_msec(1000);
         
         //write to tft time for dubugging
     } // END WHILE(1)
@@ -163,67 +165,61 @@ int main(void)
     /// SPI setup //////////////////////////////////////////
     // SCK2 is pin 26 
     // SDO2 is in PPS output group 2, could be connected to RB5 which is pin 14
-    PPSOutput(2, RPB5, SDO2);
-    // control CS for DAC
-    mPORTBSetPinsDigitalOut(BIT_4);
-    mPORTBSetBits(BIT_4);
-
-    // divide Fpb by 2, configure the I/O ports. Not using SS in this example
-    // 16 bit transfer CKP=1 CKE=1
-    // possibles SPI_OPEN_CKP_HIGH;   SPI_OPEN_SMP_END;  SPI_OPEN_CKE_REV
-    // For any given peripherial, you will need to match these
-    SpiChnOpen(spiChn, SPI_OPEN_ON | SPI_OPEN_MODE16 | SPI_OPEN_MSTEN | SPI_OPEN_CKE_REV , spiClkDiv);
+//    PPSOutput(2, RPB5, SDO2);
+//    // control CS for DAC
+//    mPORTBSetPinsDigitalOut(BIT_4);
+//    mPORTBSetBits(BIT_4);
+//
+//    // divide Fpb by 2, configure the I/O ports. Not using SS in this example
+//    // 16 bit transfer CKP=1 CKE=1
+//    // possibles SPI_OPEN_CKP_HIGH;   SPI_OPEN_SMP_END;  SPI_OPEN_CKE_REV
+//    // For any given peripherial, you will need to match these
+//    SpiChnOpen(spiChn, SPI_OPEN_ON | SPI_OPEN_MODE16 | SPI_OPEN_MSTEN | SPI_OPEN_CKE_REV , spiClkDiv);
 //________________________________________________________________________________
 //END DEBUG SECTION
     
-    // init the display
-    tft_init_hw();
-    tft_begin();
-    tft_fillScreen(ILI9340_BLACK);
-    //240x320 vertical display
-    tft_setRotation(0); // Use tft_setRotation(1) for 320x240
-
-    //DECLARING BITS FOR STEPPER PINS
+    //DECLARING BITS FOR STEPPER PINS (Stepper 1)
+    mPORTBSetPinsDigitalOut(BIT_0);
+    mPORTBSetPinsDigitalOut(BIT_1);
+    mPORTBClearBits(BIT_0);
+    mPORTBClearBits(BIT_1);
+    
+    
+    //DECLARING BITS FOR STEPPER PINS (Stepper 2)
+    mPORTBSetPinsDigitalOut(BIT_4);
+    mPORTBSetPinsDigitalOut(BIT_5);
+    mPORTBClearBits(BIT_4);
+    mPORTBClearBits(BIT_5);
+    
+    //DECLARING BITS FOR STEPPER PINS (Stepper 3)
+    mPORTBSetPinsDigitalOut(BIT_8);
     mPORTBSetPinsDigitalOut(BIT_9);
-    mPORTBSetPinsDigitalOut(BIT_15);
+    mPORTBClearBits(BIT_8);
     mPORTBClearBits(BIT_9);
-    mPORTBClearBits(BIT_15);
     
     //setting direction pins for the motors
-    stp1.DIR = BIT_15;
-    //stp2.DIR = BIT_1;
-    //stp3.DIR = BIT_2;
+    stp1.DIR = BIT_0;
+    stp2.DIR = BIT_4;
+    stp3.DIR = BIT_8;
     
     //setting direction for the motors
     stp1.dirMove = 0;
-    //stp2.dirMove = 0;
-    //stp3.dirMove = 0;
+    stp2.dirMove = 0;
+    stp3.dirMove = 0;
 
     //setting step ppins for motors
-    stp1.STP = BIT_9;
-    //stp2.STP = BIT_1;
-    //stp3.STP = BIT_2;
+    stp1.STP = BIT_1;
+    stp2.STP = BIT_5;
+    stp3.STP = BIT_9;
 
     //setting the steps remaining for each motor
-    stp1.stpLeft = 50;
-    //stp2.stpLeft = 0;
-    //stp3.stpLeft = 0;
+    stp1.stpLeft = 0;
+    stp2.stpLeft = 0;
+    stp3.stpLeft = 0;
 
     //setting up the dc motor
     //dc1.ENA = BIT_8;
     //dc1.on = 0;
-    // print steps left
-        tft_setCursor(20, 20);
-        tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-        sprintf(buffer, "Steps Left: %d", stp1.stpLeft);
-        tft_writeString(buffer);
-        
-        
-        //print direction of movement
-        tft_setCursor(20, 40);
-        tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-        sprintf(buffer, "Direction: %d", stp1.dirMove);
-        tft_writeString(buffer);
 
     // schedule the threads
     while(1) {
