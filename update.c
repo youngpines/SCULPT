@@ -93,36 +93,70 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
 {    
         //checking to make sure z still needs to step
         if(stp3.stpLeft > 0){
+            if(lowered = 1){    //turn one direction to lower
+                //determining which state the input needs and setting
+                //the appropriate bits of the stepper motor driver
+                if(ct==0){ //1010
+                    mPORTBSetBits(stp3.DIR);
+                    mPORTBSetBits(stp3.STP);
+                    mPORTBClearBits(stp3.NDIR);
+                    mPORTBClearBits(stp3.NSTP);
+                    ct++;
+                }
+                else if(ct==1){ //0110
+                    mPORTBSetBits(stp3.NDIR);
+                    mPORTBSetBits(stp3.STP);
+                    mPORTBClearBits(stp3.DIR);
+                    mPORTBClearBits(stp3.NSTP);
+                    ct++;
+                }
+                else if(ct==2){  //0101
+                    mPORTBSetBits(stp3.NDIR);
+                    mPORTBSetBits(stp3.NSTP);
+                    mPORTBClearBits(stp3.DIR);
+                    mPORTBClearBits(stp3.STP);
+                    ct++;
+                }
+                else if(ct==3){ //1001
+                    mPORTBSetBits(stp3.DIR);
+                    mPORTBSetBits(stp3.NSTP);
+                    mPORTBClearBits(stp3.NDIR);
+                    mPORTBClearBits(stp3.STP);
+                    ct = 0;
+                }
+            }
             
-            //determining which state the input needs and setting
-            //the appropriate bits of the stepper motor driver
-            if(ct==0){ //1010
-                mPORTBSetBits(stp3.DIR);
-                mPORTBSetBits(stp3.STP);
-                mPORTBClearBits(stp3.NDIR);
-                mPORTBClearBits(stp3.NSTP);
-                ct++;
-            }
-            else if(ct==1){ //0110
-                mPORTBSetBits(stp3.NDIR);
-                mPORTBSetBits(stp3.STP);
-                mPORTBClearBits(stp3.DIR);
-                mPORTBClearBits(stp3.NSTP);
-                ct++;
-            }
-            else if(ct==2){  //0101
-                mPORTBSetBits(stp3.NDIR);
-                mPORTBSetBits(stp3.NSTP);
-                mPORTBClearBits(stp3.DIR);
-                mPORTBClearBits(stp3.STP);
-                ct++;
-            }
-            else if(ct==3){ //1001
-                mPORTBSetBits(stp3.DIR);
-                mPORTBSetBits(stp3.NSTP);
-                mPORTBClearBits(stp3.NDIR);
-                mPORTBClearBits(stp3.STP);
-                ct = 0;
+            else{    //turn opposite direction to raise 
+                //determining which state the input needs and setting
+                //the appropriate bits of the stepper motor driver
+                if(ct==0){ //0101
+                    mPORTBSetBits(stp3.NDIR);
+                    mPORTBSetBits(stp3.NSTP);
+                    mPORTBClearBits(stp3.DIR);
+                    mPORTBClearBits(stp3.STP);
+                    ct++;
+                }
+                else if(ct==1){ //1001
+                    mPORTBSetBits(stp3.DIR);
+                    mPORTBSetBits(stp3.NSTP);
+                    mPORTBClearBits(stp3.NDIR);
+                    mPORTBClearBits(stp3.STP);
+                    ct++;
+                }
+                else if(ct==2){  //1010
+                    mPORTBSetBits(stp3.DIR);
+                    mPORTBSetBits(stp3.STP);
+                    mPORTBClearBits(stp3.NDIR);
+                    mPORTBClearBits(stp3.NSTP);
+                    ct++;
+                }
+                else if(ct==3){ //0110
+                    mPORTBSetBits(stp3.NDIR);
+                    mPORTBSetBits(stp3.STP);
+                    mPORTBClearBits(stp3.DIR);
+                    mPORTBClearBits(stp3.NSTP);
+                    ct = 0;
+                }
             }
         }
     
