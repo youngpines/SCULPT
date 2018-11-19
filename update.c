@@ -39,6 +39,12 @@ struct DC_Motor dc1;                //dc motor
 //a state variable that determines if the target location has been reached
 volatile static int keep_moving = 0;
 
+//a state to determine if the drill is lowered currently or not
+volatile static int lowered = 0;
+
+//a state variable to determine if the image is carved yet or not
+volatile static int carved = 0;
+
 // frequency of x and y motor stepping (max), currently at a step ever 1 msec (2 interrupts)
 static const int generate_period_xy = 20000;
 
@@ -138,63 +144,126 @@ static PT_THREAD (protothread_move(struct pt *pt))
 {
     PT_BEGIN(pt);
 
-    //infinite loop for the finding of new locations and moving to them
-    while(1) {
-        
-        //the x and y positions in the image array
-        static int x_pos, y_pos;
-        
-        //looping through all entries in the image array
-        for(x_pos = 0; x_pos < x_max; x++){         //x coordinates iterated slowly
-            for(y_pos = 0; y_pos < y_max; y++{      //individual movement along the y
+    //the x and y positions in the image array
+    static int x_pos, y_pos;
+
+    //looping through all entries in the image array
+    for(x_pos = 0; x_pos < x_max; x++){         //x coordinates iterated slowly
+        for(y_pos = 0; y_pos < y_max; y++{      //individual movement along the y
+
+            //TODO: RECALC of DISTANCE for IMAGE ARRAY ENTRY (y and z)
+
+
+            if(image[x_pos][y_pos] > 127){  //requires z to be raised
+
+                //turn off the dc motor first
+                mPORTAClearBits(dc1.ENA);
+                dc1.on = 0;
                 
-                //TODO: CALC of DISTANCE for IMAGE ARRAY ENTRY (y and z)
-                
-                
-                //setting up for the ISR to move the position
-                keep_moving = 1;
-                //halting until the desired position is reached
-                PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-                
-                
-                
-                
-                
+                //checking if the z is raised or not
+                if(lowered ==1){    //currently lowered and needs to raise
+
+                    //set the state to move the opposite direction
+                    lowered = 0;
+                    //raise the z axis
+                    z.stpLeft = 8000;
+
+                }
+
+                else{               //already raised
+                    z.stpLeft = 0;
+                }         
             }
+
+
+            else{   // requires z to be lowered
                 
-            //handling resetting at the top of the x pos (NOT SURE WHICH DIRECTION YET)
-            mPORTBSetBits(stp2.DIR);
-            //mPORTBClearBits(stp2.DIR);
+                //turn on the dc motor first
+                mPORTASetBits(dc1.ENA);
+                dc1.on = 1;
                 
-            //set the steps for moving to the x and resetting y and raising z
-                
-                
+                //checking if the z is raised or not
+                if(lowered ==0){    //currently raised and needs to lower
+
+                    //set the state to move the opposite direction
+                    lowered = 1;
+                    //lower the z axis
+                    z.stpLeft = 8000;
+
+                }
+
+                else{               //already lowered
+                    z.stpLeft = 0;
+                }  
+            }
+
+            //setting the steps to move in y
+            stp2.stpLeft = 400;
+
             //setting up for the ISR to move the position
             keep_moving = 1;
             //halting until the desired position is reached
             PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-        
         }
-            
-            
-            
-            
-        stp1.stpLeft = 1000;
-        stp2.stpLeft = 1000;
-        stp3.stpLeft = 1000;
-        
 
-        //handling direction changes for stp1
-        if(stp1.dirMove == 1) mPORTBSetBits(stp1.DIR);
-        else mPORTBClearBits(stp1.DIR);
+            
+            
+        //turn off the dc motor first
+        mPORTAClearBits(dc1.ENA);
+        dc1.on = 0;
+            
+        //handling resetting at the top of the x pos (NOT SURE WHICH DIRECTION YET)
+        mPORTBSetBits(stp2.DIR); 
         
-        //handling direction changes for stp1
-        //if(stp2.dirMove == 1) mPORTBSetBits(stp2.DIR);
-        ///else mPORTBClearBits(stp2.DIR);
-       
+        //checking if z is raised or not, if not raising it
+        if(lowered ==1){    //currently lowered and needs to raise
+
+            //set the state to move the opposite direction
+            lowered = 0;
+            //raise the z axis
+            z.stpLeft = 8000;
+
+        }
+        else    z.stpLeft = 0;      //already raised
         
-        
-    } // END WHILE(1)
+        //resetting the y location
+        stp2.stpLeft = 400 * y_max;
+            
+        //stepping the appropriate amount in x
+        stp1.stpLeft = 400;
+
+        //setting up for the ISR to move the position
+        keep_moving = 1;
+        //halting until the desired position is reached
+        PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
+            
+        //return to the original direction of travel for the stepper
+        mPORTBClearBits(stp2.DIR);
+
+    }
+   
+            
+    //final reset for z and dc motor        
+    //turn off the dc motor first
+    mPORTAClearBits(dc1.ENA);
+    dc1.on = 0;
+
+    //checking if z is raised or not, if not raising it
+    if(lowered ==1){    //currently lowered and needs to raise
+
+        //set the state to move the opposite direction
+        lowered = 0;
+        //raise the z axis
+        z.stpLeft = 8000;
+
+    }         
+  
+    //tell the align and data thread that the image has been carved
+    carved = 1;
+            
+    //once done working through the image array just yield
+    PT_YIELD();
+            
     PT_END(pt);
 } // timer thread
 
@@ -202,15 +271,24 @@ static PT_THREAD (protothread_move(struct pt *pt))
 
 // === DataProcess Thread =================================================
 /*TODO: Convert image info to locations*/
+            
+//this thread first aligns the machine as well as sets the dimensions of soap
+//then it allows the image array to be iterated through in another array
+//and finally returns to the default state
 static PT_THREAD (protothread_data(struct pt *pt))
 {
     PT_BEGIN(pt);
-    while(1){
 
-        PT_YIELD_TIME_msec(1000);
-        
-        //write to tft time for dubugging
-    } // END WHILE(1)
+
+    //import data
+    //align to edge of soap
+    //yield until carving done
+    PT_YIELD_UNTIL(&pt_data, carved == 1);
+    //align to feed out soap
+
+    //spin in the end
+    while(1);
+
   PT_END(pt);
 } // animation thread
 
