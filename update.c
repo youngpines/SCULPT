@@ -1,13 +1,11 @@
 
 #include "config.h"
-// threading library
 #include "pt_cornell_1_2_1.h"
-// need for rand function
 #include <stdlib.h>
 #include <math.h>
 
-//struct to hold info for each stepper motor
-struct Stepper_Motor{
+
+struct Stepper_Motor{       //for easy stepper motor driver
     int DIR;    //the direction pin for a selected stepper
     int dirMove;    //the direction to move
     int STP;    //the pin connected to the step function for a stepper
@@ -15,115 +13,86 @@ struct Stepper_Motor{
     
 };
 
-struct Stepper_Motor_L{
-    int DIR;    //the direction pin for a selected stepper
-    int NDIR;    //opposite of DIR
-    int STP;    //the pin connected to the step function for a stepper
-    int NSTP;    //opposite of STP
+struct Stepper_Motor_L{     //for stepper motor driver L298N
+    int DIR;        //first input pin
+    int NDIR;       //second input pin, inverse of DIR
+    int STP;        //third input pin
+    int NSTP;       //fourth input pin, inverse of STP
     volatile int stpLeft;    //steps left on the current stepper
     
 };
 
-//struct for the DC motor
-struct DC_Motor{
-    int on; //whether or not the motor is on
-    int ENA;    //the pin for the PWM to control on duration
+struct DC_Motor{    //dc motor, controlled by two pins, no PWM as full power wanted always
+    int on;     //whether or not the motor is on
+    int ENA;    //enabling the motor to spin
 };
 
-// === thread structures ============================================
-//structs for threads
+
 static struct pt pt_data,   //protothread to convert data to stepper locations
         pt_move;             //stepper calculations to get to positions
 
 
-struct Stepper_Motor stp1, stp2;     //the stepper motors in use
-struct Stepper_Motor_L stp3;
-struct DC_Motor dc1;                             //dc motor in use
+struct Stepper_Motor stp1, stp2;     //the stepper motors in use, easy stepper driver board
+struct Stepper_Motor_L stp3;        // L298 stepper motor driver
+struct DC_Motor dc1;                //dc motor 
 
-volatile SpiChannel spiChn = SPI_CHANNEL2 ;	 // the SPI channel to use
-volatile int spiClkDiv = 2 ;                 // 20 MHz DAC clock
-
-//keep stepping or not
+//a state variable that determines if the target location has been reached
 volatile static int keep_moving = 0;
 
-// frequency of motor stepping (max)
-int generate_period = 20000;
+// frequency of x and y motor stepping (max), currently at a step ever 1 msec (2 interrupts)
+static const int generate_period_xy = 20000;
+
+//frequency of z stepper rotation, currently once every 6 msec
+static const int generate_period_z = 120000;
 
 // == Timer 2 ISR =====================================================
-// keeps timing for PWM
-static volatile int ct = 0;
+// steps the x and y motors
 void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 {
-    
-    //move z first
-    if(stp1.stpLeft > 0){
-        mPORTBToggleBits(stp1.STP);
-        stp1.stpLeft--;
+    //check if z axis is done moving first
+    if(stp3.stpLeft > 0){
     }
-    
-    //otherwise move x and y
-    //tentative could maybe break into x and y separately
+   
+    //move x and y if z is complete
     else {
+        //y movement
         if(stp2.stpLeft > 0){
             mPORTBToggleBits(stp2.STP);
             stp2.stpLeft--;
         }
-//        
-//        if(stp3.stpLeft > 0){
-//            if(ct==0){ //1010
-//                mPORTBSetBits(stp3.DIR);
-//                mPORTBSetBits(stp3.STP);
-//                
-//                mPORTBClearBits(stp3.NDIR);
-//                mPORTBClearBits(stp3.NSTP);
-//                ct++;
-//            }
-//            else if(ct==1){ //0110
-//                mPORTBSetBits(stp3.NDIR);
-//                mPORTBSetBits(stp3.STP);
-//                
-//                mPORTBClearBits(stp3.DIR);
-//                mPORTBClearBits(stp3.NSTP);
-//                ct++;
-//            }
-//            else if(ct==2){  //0101
-//                mPORTBSetBits(stp3.NDIR);
-//                mPORTBSetBits(stp3.NSTP);
-//                
-//                mPORTBClearBits(stp3.DIR);
-//                mPORTBClearBits(stp3.STP);
-//                ct++;
-//            }
-//            else if(ct==3){ //1001
-//                mPORTBSetBits(stp3.DIR);
-//                mPORTBSetBits(stp3.NSTP);
-//                
-//                
-//                mPORTBClearBits(stp3.NDIR);
-//                mPORTBClearBits(stp3.STP);
-//                ct = 0;
-//            }
- //       }
+        //x movement
+        if(stp1.stpLeft > 0){
+            mPORTBToggleBits(stp1.STP);
+            stp1.stpLeft--;
+        }
     }
-    if(stp1.stpLeft <= 0 &&  stp2.stpLeft <= 0 && stp3.stpLeft <= 0)
-        keep_moving = 0;
-    // clear the timer interrupt flag
+    
+    //checking if all motors are done stepping, and if so then updating the state
+    if(stp1.stpLeft <= 0 &&  stp2.stpLeft <= 0 && stp3.stpLeft <= 0) keep_moving = 0;
+    
+    //clearing the interrupt flag
     mT2ClearIntFlag();
 }
 
-// == Timer 3 ISR =====================================================
+// ====================================================================
 
-// ISR
-static int i;
+
+
+// == Timer 3 ISR =====================================================
+//a state variable to track what configuration the L298N stepper driver needs for input
+static volatile int ct = 0;
+
+//this interrupt only focuses on moving the z axis (always moves first if steps left)
 void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
 {    
-    /*TODO: Implement a means to turn until the steppers have completed*/
-            
+        //checking to make sure z still needs to step
         if(stp3.stpLeft > 0){
+            
+            //determining which state the input needs and setting
+            //the appropriate bits of the stepper motor driver
             if(ct==0){ //1010
                 mPORTBSetBits(stp3.DIR);
                 mPORTBSetBits(stp3.STP);
-                
                 mPORTBClearBits(stp3.NDIR);
                 mPORTBClearBits(stp3.NSTP);
                 ct++;
@@ -131,7 +100,6 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
             else if(ct==1){ //0110
                 mPORTBSetBits(stp3.NDIR);
                 mPORTBSetBits(stp3.STP);
-                
                 mPORTBClearBits(stp3.DIR);
                 mPORTBClearBits(stp3.NSTP);
                 ct++;
@@ -139,7 +107,6 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
             else if(ct==2){  //0101
                 mPORTBSetBits(stp3.NDIR);
                 mPORTBSetBits(stp3.NSTP);
-                
                 mPORTBClearBits(stp3.DIR);
                 mPORTBClearBits(stp3.STP);
                 ct++;
@@ -147,42 +114,76 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
             else if(ct==3){ //1001
                 mPORTBSetBits(stp3.DIR);
                 mPORTBSetBits(stp3.NSTP);
-                
-                
                 mPORTBClearBits(stp3.NDIR);
                 mPORTBClearBits(stp3.STP);
                 ct = 0;
             }
         }
-        if(stp1.stpLeft <= 0 &&  stp2.stpLeft <= 0 && stp3.stpLeft <= 0)
-        keep_moving = 0;
+    
+        //clear the interrupt flag
         mT3ClearIntFlag();
 }
+//==================================================================
+
 
 // === Move Thread =================================================
 /*TODO: STEPPER CALCS*/
 //calculate how many rotations each stepper needs to reach the next location
 //also will determine if needs to raise or not between locations
+
+//this thread finds the next location to travel to, and calculates the steps needed to get there
+//then it sets those steps for each axis and yields until the motion is complete
+//the DC motor is turned on, or remains on, if the location is to be removed
 static PT_THREAD (protothread_move(struct pt *pt))
 {
     PT_BEGIN(pt);
 
+    //infinite loop for the finding of new locations and moving to them
     while(1) {
         
+        //the x and y positions in the image array
+        static int x_pos, y_pos;
+        
+        //looping through all entries in the image array
+        for(x_pos = 0; x_pos < x_max; x++){         //x coordinates iterated slowly
+            for(y_pos = 0; y_pos < y_max; y++{      //individual movement along the y
+                
+                //TODO: CALC of DISTANCE for IMAGE ARRAY ENTRY (y and z)
+                
+                
+                //setting up for the ISR to move the position
+                keep_moving = 1;
+                //halting until the desired position is reached
+                PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
+                
+                
+                
+                
+                
+            }
+                
+            //handling resetting at the top of the x pos (NOT SURE WHICH DIRECTION YET)
+            mPORTBSetBits(stp2.DIR);
+            //mPORTBClearBits(stp2.DIR);
+                
+            //set the steps for moving to the x and resetting y and raising z
+                
+                
+            //setting up for the ISR to move the position
+            keep_moving = 1;
+            //halting until the desired position is reached
+            PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
+        
+        }
+            
+            
+            
+            
         stp1.stpLeft = 1000;
         stp2.stpLeft = 1000;
         stp3.stpLeft = 1000;
         
-        //allowing the ISR to move the position
-        keep_moving = 1;
-        
-        //halting until the desired position is reached
-        PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
 
-        //flipping directions for lols
-        //stp1.dirMove = 1- stp1.dirMove;
-        //stp2.dirMove = 1- stp2.dirMove;
-        
         //handling direction changes for stp1
         if(stp1.dirMove == 1) mPORTBSetBits(stp1.DIR);
         else mPORTBClearBits(stp1.DIR);
