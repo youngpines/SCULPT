@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <math.h>
 
+//image size parameters
+const static int x_max=200;
+const static int y_max=200;
+//image data array that holds pixelated info
+volatile static int image[x_max][y_max];
+
 
 struct Stepper_Motor{       //for easy stepper motor driver
     int DIR;    //the direction pin for a selected stepper
