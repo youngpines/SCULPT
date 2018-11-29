@@ -80,7 +80,11 @@ static PT_THREAD (protothread_serial(struct pt *pt))
       tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(1);
       sprintf(buffer,"Starting");
       tft_writeString(buffer);
+      static int count = 0;
       while(1) {
+          count++;
+          
+          
             // toggle the LED on the big board
             mPORTBToggleBits(BIT_0);
             // send the prompt via DMA to serial
@@ -99,25 +103,28 @@ static PT_THREAD (protothread_serial(struct pt *pt))
              sscanf(PT_term_buffer, "%s %d", cmd, &value);
 
              switch(cmd[0]){
-                 case 'f': // set frequency of DAC sawtooth output
+                 case 'p': // set frequency of DAC sawtooth output
                      // enter frequency in HZ
                      blink_freq = value;
                      break;
-                 
+                 case 'e': 
+                     tft_fillRoundRect(50,50, 100, 100, 1, ILI9340_BLACK);// x,y,w,h,radius,color
+            
+                    tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(4);
+
+                    tft_setCursor(50, 80);
+                    sprintf(buffer,"%d",count);
+                    tft_writeString(buffer);
+                    while(1);
                  default:
                      blink_freq = 500;                   
             break;
             }
              
-             tft_fillRoundRect(50,50, 90, 14, 1, ILI9340_BLACK);// x,y,w,h,radius,color
-            tft_setCursor(50, 50);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(1);
-            sprintf(buffer,"%d",blink_freq);
-            tft_writeString(buffer);
-            
-             
             // never exit while
       } // END WHILE(1)
+      
+     while(1);
   PT_END(pt);
 } // thread 3
 
