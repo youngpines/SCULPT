@@ -1,14 +1,27 @@
-
+////////////////////////////////////
+// clock AND protoThreads configure!
+// You MUST check this file!
 #include "config.h"
-#include "pt_cornell_1_2_1.h"
-#include <stdlib.h>
-
-//define to import data via UART
+// threading library
 #define use_uart_serial
+#include "pt_cornell_1_2_3.h"
+////////////////////////////////////
+
+////////////////////////////////////
+// graphics libraries
+// SPI channel 1 connections to TFT
+#include "tft_master.h"
+#include "tft_gfx.h"
+// need for rand function
+#include <stdlib.h>
+// need for sin function
+#include <math.h>
+////////////////////////////////////
+
 
 //image size parameters
-#define x_dim 75
-#define y_dim 200
+#define x_dim 5
+#define y_dim 10
 
 //image data array that holds pixelated info of image
 static unsigned short image[x_dim][y_dim];
@@ -177,6 +190,7 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
 //==================================================================
 
 
+
 // === Move Thread =================================================
 /*TODO: STEPPER CALCS*/
 //calculate how many rotations each stepper needs to reach the next location
@@ -316,23 +330,73 @@ static PT_THREAD (protothread_move(struct pt *pt))
 
 
 
-// === DataProcess Thread =================================================
-/*TODO: Convert image info to locations*/
-            
-//this thread first aligns the machine as well as sets the dimensions of soap
-//then it allows the image array to be iterated through in another array
-//and finally returns to the default state
-static PT_THREAD (protothread_data(struct pt *pt))
+/* Demo code for interfacing TFT (ILI9340 controller) to PIC32
+ * The library has been modified from a similar Adafruit library
+ */
+// Adafruit data:
+/***************************************************
+  This is an example sketch for the Adafruit 2.2" SPI display.
+  This library works with the Adafruit 2.2" TFT Breakout w/SD card
+  ----> http://www.adafruit.com/products/1480
+  Check out the links above for our tutorials and wiring diagrams
+  These displays use SPI to communicate, 4 or 5 pins are required to
+  interface (RST is optional)
+  Adafruit invests time and resources providing this open source code,
+  please support Adafruit and open-source hardware by purchasing
+  products from Adafruit!
+  Written by Limor Fried/Ladyada for Adafruit Industries.
+  MIT license, all text above must be included in any redistribution
+ ****************************************************/
+// string buffer
+char buffer[60];
+
+// === thread structures ============================================
+// thread control structs
+// note that UART input and output are threads
+static struct pt pt_timer, pt_serial;
+// The following threads are necessary for UART control
+static struct pt pt_input, pt_output, pt_DMA_output;
+
+// === Timer Thread =================================================
+// update a 1 second tick counter
+int blink_freq = 500;
+static PT_THREAD (protothread_timer(struct pt *pt))
 {
     PT_BEGIN(pt);
+     // set up LED to blink
+     mPORTASetBits(BIT_0 );	//Clear bits to ensure light is off.
+     mPORTASetPinsDigitalOut(BIT_0 );    //Set port as output
+     
+      while(1) {
+        // yield time 1 second
+        PT_YIELD_TIME_msec(blink_freq) ;
+        // toggle the LED on the big board
+        mPORTAToggleBits(BIT_0);
+        // NEVER exit while
+      } // END WHILE(1)
+    PT_END(pt);
+} // timer thread
 
-    static int x,y = 0;
-    volatile static unsigned short value;
-    
-    //import data
-    for(x = 0; x < x_dim; x++){
-        for(y = 0; y <y_dim; y++){
-        
+//=== Serial terminal thread =================================================
+static PT_THREAD (protothread_serial(struct pt *pt))
+{
+    PT_BEGIN(pt);
+      static char cmd[30];
+      static int value;
+      mPORTBSetBits(BIT_0 );	//Clear bits to ensure light is off.
+      mPORTBSetPinsDigitalOut(BIT_0 );    //Set port as output
+      tft_fillRoundRect(0,10, 90, 14, 1, ILI9340_BLACK);// x,y,w,h,radius,color
+      tft_setCursor(10, 10);
+      tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(1);
+      sprintf(buffer,"Starting");
+      tft_writeString(buffer);
+      static int count = 0;
+      while(1) {
+          
+          //count++;
+            // toggle the LED on the big board
+            mPORTBToggleBits(BIT_0);
+            // send the prompt via DMA to serial
             sprintf(PT_send_buffer,"cmd>");
             // by spawning a print thread
             PT_SPAWN(pt, &pt_DMA_output, PT_DMA_PutSerialBuffer(&pt_DMA_output) );
@@ -345,31 +409,41 @@ static PT_THREAD (protothread_data(struct pt *pt))
             // returns when the thead dies
             // in this case, when <enter> is pushed
             // now parse the string
-             sscanf(PT_term_buffer, "%d", &value);
-             
-             //placing the received value in the image array
-             image[x][y] = value;
+             sscanf(PT_term_buffer, "%s %d", cmd, &value);
+             count++;
+             switch(cmd[0]){
+                 case 'p': // set frequency of DAC sawtooth output
+                     // enter frequency in HZ
+                     blink_freq = value;
+                     image[count%x_dim][count/y_dim] = value;
+                     break;
+                 case 'e': 
+                     tft_fillRoundRect(50,50, 100, 100, 1, ILI9340_BLACK);// x,y,w,h,radius,color
             
-        }
-    
-    }
-    
-    
-    //align to edge of soap
-    //yield until carving done
-    PT_YIELD_UNTIL(&pt_data, carved == 1);
-    //align to feed out soap
-    
-    //spin in the end
-    while(1);
+                    tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
 
+                    tft_setCursor(50, 80);
+                    sprintf(buffer,"[%d, %d] = %d", count%x_dim, count/y_dim, count);
+                    tft_writeString(buffer);
+                    while(1);
+                 default:
+                     blink_freq = 500;                   
+            break;
+            }
+           
+            // never exit while
+      } // END WHILE(1)
+      
+     while(1);
   PT_END(pt);
-} // animation thread
+} // thread 3
 
-int main(void)
-{
-    
-    // === Config timer and output compares to make pulses ========
+// === Main  ======================================================
+void main(void) {
+ //SYSTEMConfigPerformance(PBCLK);
+  
+  ANSELA = 0; ANSELB = 0; 
+// === Config timer and output compares to make pulses ========
     // set up timer2 to generate the wave period
     OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1, generate_period_xy);
     ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
@@ -378,39 +452,25 @@ int main(void)
     OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_1,generate_period_z);
     ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
     mT3ClearIntFlag(); // and clear the interrupt flag
+  // === config threads ==========
+  // turns OFF UART support and debugger pin, unless defines are set
+  PT_setup();
+
+  // === setup system wide interrupts  ========
+  INTEnableSystemMultiVectoredInt();
+    // init the display
+    tft_init_hw();
+    tft_begin();
+    tft_setRotation(0);
+    tft_fillScreen(ILI9340_BLACK);
   
-    // === now the threads ===================================
-    // Setup the threads
-    PT_setup();
+  // init the threads
+  PT_INIT(&pt_timer);
+  PT_INIT(&pt_serial);
+  PT_INIT(&pt_move);
+  // round-robin scheduler for threads
   
-    // === setup system wide interrupts  ====================
-    INTEnableSystemMultiVectoredInt();
-  
-    // init the threads
-    PT_INIT(&pt_data);
-    PT_INIT(&pt_move);
-    
-    
-    //_________________________________________________
-    //ONLY FOR DEBUGGING
-    
-    /// SPI setup //////////////////////////////////////////
-    // SCK2 is pin 26 
-    // SDO2 is in PPS output group 2, could be connected to RB5 which is pin 14
-//    PPSOutput(2, RPB5, SDO2);
-//    // control CS for DAC
-//    mPORTBSetPinsDigitalOut(BIT_4);
-//    mPORTBSetBits(BIT_4);
-//
-//    // divide Fpb by 2, configure the I/O ports. Not using SS in this example
-//    // 16 bit transfer CKP=1 CKE=1
-//    // possibles SPI_OPEN_CKP_HIGH;   SPI_OPEN_SMP_END;  SPI_OPEN_CKE_REV
-//    // For any given peripherial, you will need to match these
-//    SpiChnOpen(spiChn, SPI_OPEN_ON | SPI_OPEN_MODE16 | SPI_OPEN_MSTEN | SPI_OPEN_CKE_REV , spiClkDiv);
-//________________________________________________________________________________
-//END DEBUG SECTION
-    
-    //DECLARING BITS FOR STEPPER PINS (Stepper 1)
+  //DECLARING BITS FOR STEPPER PINS (Stepper 1)
     mPORTBSetPinsDigitalOut(BIT_0);
     mPORTBSetPinsDigitalOut(BIT_1);
     mPORTBClearBits(BIT_0);
@@ -459,10 +519,10 @@ int main(void)
     //setting up the dc motor
     dc1.ENA = BIT_14;
     dc1.on = 0;
-
-    // schedule the threads
-    while(1) {
-        PT_SCHEDULE(protothread_data(&pt_data));
-        PT_SCHEDULE(protothread_move(&pt_move));
-    }
-} // main
+  
+  while (1){
+      PT_SCHEDULE(protothread_timer(&pt_timer));
+      PT_SCHEDULE(protothread_serial(&pt_serial));
+      PT_SCHEDULE(protothread_serial(&pt_move));  
+  }
+  } // main
