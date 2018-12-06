@@ -43,9 +43,9 @@
 #define y_dim 40
 
 // frequency of x and y motor stepping (max), currently at a step ever 1 msec (2 interrupts)
-#define generate_period_xy  20000
+#define generate_period_y  20000
 //frequency of z stepper rotation, currently once every 6 msec
-#define generate_period_z  120000
+#define generate_period_xz  120000
 //=======================================================================================
 
 /*ALL UNIQUE STRUCTS REQUIRED FOR OPERATION*/
@@ -64,7 +64,7 @@ struct Stepper_Motor_L{     //for stepper motor driver L298N
     int STP;        //third input pin
     int NSTP;       //fourth input pin, inverse of STP
     volatile int stpLeft;    //steps left on the current stepper
-    int pos_motion;         //if the motion is towards or away from motor
+    volatile int pos_motion;         //if the motion is towards or away from motor
     
 };
 
@@ -132,16 +132,9 @@ volatile int ct = 0;
 
 //this interrupt only focuses on moving the z axis (always moves first if steps left)
 void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
-{       mPORTBClearBits(stp3.DIR);
-        mPORTBClearBits(stp3.STP);
-        mPORTBClearBits(stp3.NDIR);
-        mPORTBClearBits(stp3.NSTP);
+{       
         //checking to make sure z still needs to step
         if(stp3.stpLeft > 0){
-            mPORTBClearBits(stp3.NDIR);
-            mPORTBClearBits(stp3.STP);
-            mPORTBClearBits(stp3.DIR);
-            mPORTBClearBits(stp3.NSTP);
             if(stp3.pos_motion == 0){    //turn one direction to lower
                 //determining which state the input needs and setting
                 //the appropriate bits of the stepper motor driver
@@ -178,31 +171,31 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
             else{    //turn opposite direction to raise 
                 //determining which state the input needs and setting
                 //the appropriate bits of the stepper motor driver
-                if(ct==0){ //0101
+                if(ct==0){ //1001
+                    mPORTBSetBits(stp3.DIR);
+                    mPORTBSetBits(stp3.NSTP);
+                    mPORTBClearBits(stp3.NDIR);
+                    mPORTBClearBits(stp3.STP);
+                    ct++;
+                }
+                else if(ct==1){ //0101
                     mPORTBSetBits(stp3.NDIR);
                     mPORTBSetBits(stp3.NSTP);
                     mPORTBClearBits(stp3.DIR);
                     mPORTBClearBits(stp3.STP);
                     ct++;
                 }
-                else if(ct==1){ //1001
-                    mPORTBSetBits(stp3.DIR);
-                    mPORTBSetBits(stp3.NSTP);
-                    mPORTBClearBits(stp3.NDIR);
-                    mPORTBClearBits(stp3.STP);
-                    ct++;
-                }
-                else if(ct==2){  //1010
-                    mPORTBSetBits(stp3.DIR);
+                else if(ct==2){  //0110
+                    mPORTBSetBits(stp3.NDIR);
                     mPORTBSetBits(stp3.STP);
-                    mPORTBClearBits(stp3.NDIR);
+                    mPORTBClearBits(stp3.DIR);
                     mPORTBClearBits(stp3.NSTP);
                     ct++;
                 }
-                else if(ct==3){ //0110
-                    mPORTBSetBits(stp3.NDIR);
+                else if(ct==3){ //1010
+                    mPORTBSetBits(stp3.DIR);
                     mPORTBSetBits(stp3.STP);
-                    mPORTBClearBits(stp3.DIR);
+                    mPORTBClearBits(stp3.NDIR);
                     mPORTBClearBits(stp3.NSTP);
                     ct = 0;
                 }
@@ -246,31 +239,31 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
             else{    //turn opposite direction to raise 
                 //determining which state the input needs and setting
                 //the appropriate bits of the stepper motor driver
-                if(ct==0){ //0101
+                if(ct==0){ //1001
+                    mPORTBSetBits(stp1.DIR);
+                    mPORTBSetBits(stp1.NSTP);
+                    mPORTBClearBits(stp1.NDIR);
+                    mPORTBClearBits(stp1.STP);
+                    ct++;
+                }
+                else if(ct==1){ //0101
                     mPORTBSetBits(stp1.NDIR);
                     mPORTBSetBits(stp1.NSTP);
                     mPORTBClearBits(stp1.DIR);
                     mPORTBClearBits(stp1.STP);
                     ct++;
                 }
-                else if(ct==1){ //1001
-                    mPORTBSetBits(stp1.DIR);
-                    mPORTBSetBits(stp1.NSTP);
-                    mPORTBClearBits(stp1.NDIR);
-                    mPORTBClearBits(stp1.STP);
-                    ct++;
-                }
-                else if(ct==2){  //1010
-                    mPORTBSetBits(stp1.DIR);
+                else if(ct==2){  //0110
+                    mPORTBSetBits(stp1.NDIR);
                     mPORTBSetBits(stp1.STP);
-                    mPORTBClearBits(stp1.NDIR);
+                    mPORTBClearBits(stp1.DIR);
                     mPORTBClearBits(stp1.NSTP);
                     ct++;
                 }
-                else if(ct==3){ //0110
-                    mPORTBSetBits(stp1.NDIR);
+                else if(ct==3){ //1010
+                    mPORTBSetBits(stp1.DIR);
                     mPORTBSetBits(stp1.STP);
-                    mPORTBClearBits(stp1.DIR);
+                    mPORTBClearBits(stp1.NDIR);
                     mPORTBClearBits(stp1.NSTP);
                     ct = 0;
                 }
@@ -294,7 +287,7 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
 //then it sets those steps for each axis and yields until the motion is complete
 //the DC motor is turned on, or remains on, if the location is to be removed
 
-//currently each change in x and y is 300 steps in the x and y direction
+//currently each change in x and y is 585 steps in the x and y direction
 static PT_THREAD (protothread_move(struct pt *pt))
 {
     PT_BEGIN(pt);
@@ -322,10 +315,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
         
         //then the y is step forward to the future entry and the process is redone
         for(y_pos = -1; y_pos < y_dim-1; y_pos++){      //looking ahead requires the shift by 1
-            mPORTBClearBits(BIT_9);
-            //TODO: RECALC of DISTANCE for IMAGE ARRAY ENTRY (y and z)
             
-
             if(image[x_pos][y_pos+1] > 127){  //requires z to be raised
                 
                 //turn off the dc motor first
@@ -333,12 +323,12 @@ static PT_THREAD (protothread_move(struct pt *pt))
                 dc1.on = 0;
                 
                 //checking if the z is raised or not
-                if(stp3.pos_motion ==1){    //currently lowered and needs to raise
+                if(stp3.pos_motion ==0){    //currently lowered and needs to raise
 
                     //set the state to move the opposite direction
-                    stp3.pos_motion = 0;
+                    stp3.pos_motion = 1;
                     //raise the z axis
-                    stp3.stpLeft = 1000;  //-----------------------------
+                    stp3.stpLeft = 737;  //-----------------------------
                 }
 
                 else{               //already raised
@@ -350,17 +340,17 @@ static PT_THREAD (protothread_move(struct pt *pt))
             else{   // requires z to be lowered
 
                 //checking if the z is raised or not
-                if(stp3.pos_motion ==0){    //currently raised and needs to lower
+                if(stp3.pos_motion ==1){    //currently raised and needs to lower
                     
                     //turn on the dc motor first
                     mPORTASetBits(dc1.ENA);
                     dc1.on = 1;
                     
                     //set the state to move the opposite direction
-                    stp3.pos_motion = 1;
+                    stp3.pos_motion = 0;
                     
                     //lower the z axis
-                    stp3.stpLeft = 1000; //-----------------------------
+                    stp3.stpLeft = 737; //-----------------------------
 
                 }
 
@@ -370,7 +360,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
             }
 
             //setting the steps to move in y
-            stp2.stpLeft = 300;
+            stp2.stpLeft = 585;
 
             //setting up for the ISR to move the position
             keep_moving = 1;
@@ -388,21 +378,21 @@ static PT_THREAD (protothread_move(struct pt *pt))
         mPORTBClearBits(stp2.DIR); 
         
         //checking if z is raised or not, if not raising it
-        if(stp3.pos_motion ==1){    //currently lowered and needs to raise
+        if(stp3.pos_motion ==0){    //currently lowered and needs to raise
             
             //set the state to move the opposite direction
-            stp3.pos_motion = 0;
+            stp3.pos_motion = 1;
             //raise the z axis
-            stp3.stpLeft = 1000;  //-----------------------------
+            stp3.stpLeft = 737;  //-----------------------------
 
         }
         else    stp3.stpLeft = 0;      //already raised
         
         //resetting the y location
-        stp2.stpLeft = 300 * (y_dim);
+        stp2.stpLeft = 585 * (y_dim);
             
         //stepping the appropriate amount in x
-        stp1.stpLeft = 300;
+        stp1.stpLeft = 585;
 
         //setting up for the ISR to move the position
         keep_moving = 1;
@@ -461,7 +451,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
       //finally align on z axis
       
       while(mPORTAReadBits(BIT_4) == 0){
-          stp3.pos_motion = 1;
+          stp3.pos_motion = 0;
           stp3.stpLeft = 10;
           stp1.stpLeft = 0;
           stp2.stpLeft = 0;
@@ -472,7 +462,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
       
       //align on the x axis next
       while(mPORTAReadBits(BIT_3) == 0){
-          stp3.pos_motion = 1;
+          stp1.pos_motion = 1;
           stp1.stpLeft = 10;
           stp2.stpLeft = 0;
           stp3.stpLeft = 0;
