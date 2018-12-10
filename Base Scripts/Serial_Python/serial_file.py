@@ -25,7 +25,7 @@ def write_serial_manual( frequency ):
     # Open the Serial port
     ser = serial.Serial("/dev/ttyUSB0") 
     print( "Serial [ %s ] is opened" % ser.name ) # check the serial port
-    message = "f {}\r".format( frequency )
+    message = "p {}\r".format( frequency )
     print( "Going to write [ %d ]" % frequency )
     status = ser.write(message.encode('utf-8'))
     ser.close()
