@@ -6,7 +6,7 @@
 ////////////////////////////////////
 
 /*Pinout for the PIC for reference*/
-//RA0   -   Not Connected
+//RA0   -   Reset for stepper 1
 //RA1   -   UART2 TX
 //RA2   -   Y axis Load Switch
 //RA3   -   X axis Load Switch
@@ -17,15 +17,15 @@
 //RB3   -   Green LED for indication purposes
 //RB4   -   DIR pin for stepper 2 (y-axis)
 //RB5   -   STP pin for stepper 2 (y-axis)
-//RB6   -   DIR pin for stepper 3 (z-axis)
+//RB6   -   Not on package
 //RB7   -   ~DIR pin for stepper 3 (z-axis)
 //RB8   -   STP pin for stepper 2 (z-axis)
 //RB9   -   ~STP pin for stepper 2 (z-axis)
 //RB10  -   UART2 RX
 //RB11  -   DC Motor Enable pin
-//RB12  -   Reset for stepper 1
+//RB12  -   Not on Package
 //RB13  -   Reset for stepper 2
-//RB14  -   Not Used
+//RB14  -   DIR pin for stepper 3 (z-axis)
 //RB15  -   Red LED for indication purposes
 
 
@@ -109,7 +109,7 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
    
     //move x and y if z is complete
     else {
-//        //x movement
+        //x movement
         if(stp1.stpLeft > 0){
             mPORTBToggleBits(stp1.STP);
             stp1.stpLeft--;
@@ -141,10 +141,10 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
 {       
         //checking to make sure z still needs to step
         if(stp3.stpLeft > 0){
-//            mPORTBClearBits(stp3.DIR);
-//                    mPORTBClearBits(stp3.STP);
-//                    mPORTBClearBits(stp3.NDIR);
-//                    mPORTBClearBits(stp3.NSTP);
+            mPORTBClearBits(stp3.DIR);
+            mPORTBClearBits(stp3.STP);
+            mPORTBClearBits(stp3.NDIR);
+            mPORTBClearBits(stp3.NSTP);
             if(stp3.pos_motion == 0){    //turn one direction 
                 //determining which state the input needs and setting
                 //the appropriate bits of the stepper motor driver
@@ -246,25 +246,17 @@ static PT_THREAD (protothread_move(struct pt *pt))
     static int x_pos, y_pos;
     
     mPORTBSetBits(BIT_2);
-        //===================================================
-/*THIS MAY OR MAY NOT BE CORRECT*/
     mPORTBSetBits(stp1.DIR);    //ensure that x is going the correct
                                 //direction
     mPORTBSetBits(BIT_13);
-    
-    //===================================================
     
     
     //looping through all entries in the image array
     for(x_pos = 0; x_pos < x_dim; x_pos++){         //x coordinates iterated slowly
         
         
-        
-        //===================================================
-/*THIS MAY OR MAY NOT BE CORRECT*/
         mPORTBClearBits(stp2.DIR);    //ensure that y is going the correct
                                     //direction
-        //===================================================
         mPORTBSetBits(BIT_12);
         
         
@@ -374,19 +366,13 @@ static PT_THREAD (protothread_move(struct pt *pt))
     //once done working through the image array just yield
     PT_YIELD_UNTIL(&pt_move, image_carved ==0);
             
-    
-    //PT_YIELD(&pt_move);
-            
     PT_END(pt);
-} // timer thread
+} 
 
 
-/*TODO FINISH THREAD WITH ACTUAL MEASURES and DIRECTIONS*/
 //this thread will run after the serial thread and after the move thread is complete
 //it will end its operation when the load switches are hit
-
-
-//this thread will be responsible for feeding the material in and out of the 
+//this thread will also be responsible for feeding the material in and out of the 
 //machine
 static PT_THREAD (protothread_align(struct pt *pt))
 {
@@ -398,6 +384,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
   static int start = 0;
   //this while runs until all buttons are pressed and everything is done aligning
   while(1){
+  
       //align on the y axis first
       while(mPORTAReadBits(BIT_2) == 0){
           mPORTBSetBits(stp2.DIR);
@@ -435,7 +422,9 @@ static PT_THREAD (protothread_align(struct pt *pt))
         //halting until the desired position is reached
         PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
       }
-      mPORTBClearBits(BIT_12);
+      
+      //turn off stepper 1 for now to save power
+      mPORTAClearBits(BIT_0);
       
     
     
@@ -449,21 +438,16 @@ static PT_THREAD (protothread_align(struct pt *pt))
       aligned = 1;
       while(mPORTBReadBits(BIT_2) ==0); //do nothing but wait
       
-      if(start ==0){
-      //raising z to be completely clear
-    stp3.pos_motion = 1;
-    stp3.stpLeft = 2000;
-    stp1.stpLeft = 0;
-    stp2.stpLeft = 0;
-    keep_moving = 1;
-    
-    mPORTBSetBits(BIT_13);
-    
-    
-    //halting until the desired position is reached
-    PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-      
-      
+    if(start ==0){  //realigning after material loaded only at the start of execution
+          //raising z to be completely clear
+        stp3.pos_motion = 1;
+        stp3.stpLeft = 2000;
+        stp1.stpLeft = 0;
+        stp2.stpLeft = 0;
+        keep_moving = 1;    
+        mPORTBSetBits(BIT_13);    
+        //halting until the desired position is reached
+        PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
             mPORTBClearBits(stp2.DIR);
        stp2.stpLeft = 2000;
           stp1.stpLeft = 0;
@@ -471,15 +455,6 @@ static PT_THREAD (protothread_align(struct pt *pt))
          keep_moving = 1;
         //halting until the desired position is reached
         PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-      
-      
-      
-      
-        //aligning to the corner of material
-
-        /*TODO    ALIGN WITH CORNER OF BOARD AFTER ZEROING*/
-//      if(rz == 1){
-//        //Raising Z axis to load material
         stp3.pos_motion = 0;
         stp3.stpLeft = 2000;
         stp1.stpLeft = 0;
@@ -487,10 +462,8 @@ static PT_THREAD (protothread_align(struct pt *pt))
         keep_moving = 1;
         //halting until the desired position is reached
         PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-//        rz = 0;
-//      }
         start = 1;
-      }
+    }
         //after finishing the alignment yield until alignment is needed again after operation
         material_loaded =1;
         PT_YIELD_UNTIL(&pt_align, aligned == 0);
@@ -501,7 +474,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
 } // thread 3
 
 
-//=== Serial terminal thread =================================================
+//=== Serial thread =================================================
 static PT_THREAD (protothread_serial(struct pt *pt))
 {
         PT_BEGIN(pt);
@@ -528,8 +501,6 @@ static PT_THREAD (protothread_serial(struct pt *pt))
              
              switch(cmd[0]){
                  case 'p': // load pixel values into the pixel array
-                     // enter frequency in HZ
-                     
                      image[count%x_dim][count/y_dim] = value;
                      break;
                  case 'e':          // all data has been loaded and terminate signal sent
@@ -545,6 +516,9 @@ static PT_THREAD (protothread_serial(struct pt *pt))
       } // END WHILE(1) 
   PT_END(pt);
 } // thread 3
+
+
+
 
 // === Main  ======================================================
 void main(void) {
@@ -581,6 +555,9 @@ void main(void) {
     mPORTASetPinsDigitalIn(BIT_3);  //RA3
     mPORTASetPinsDigitalIn(BIT_4);  //RA4
     mPORTBSetPinsDigitalIn(BIT_2);  //RB2
+    
+    
+    //LEDs
     mPORTBSetPinsDigitalOut(BIT_15);  //RED LED
     mPORTBClearBits(BIT_15);
     mPORTBSetPinsDigitalOut(BIT_3);  //Green LED
@@ -608,17 +585,17 @@ void main(void) {
     mPORTBClearBits(BIT_5);
     
     //DECLARING BITS FOR STEPPER RESET PINS
-    mPORTBSetPinsDigitalOut(BIT_12);
+    mPORTASetPinsDigitalOut(BIT_0);
     mPORTBSetPinsDigitalOut(BIT_13);
-    mPORTBSetBits(BIT_12);
+    mPORTASetBits(BIT_0);
     mPORTBSetBits(BIT_13);
     
     //DECLARING BITS FOR STEPPER PINS (Stepper 3)
-    mPORTBSetPinsDigitalOut(BIT_6);
+    mPORTBSetPinsDigitalOut(BIT_12);
     mPORTBSetPinsDigitalOut(BIT_7);
     mPORTBSetPinsDigitalOut(BIT_8);
     mPORTBSetPinsDigitalOut(BIT_9);
-    mPORTBClearBits(BIT_6);
+    mPORTBClearBits(BIT_12);
     mPORTBClearBits(BIT_7);
     mPORTBClearBits(BIT_8);
     mPORTBClearBits(BIT_9);
@@ -630,7 +607,7 @@ void main(void) {
     //setting direction pins for the motors
     stp1.DIR = BIT_0;
     stp2.DIR = BIT_4;
-    stp3.DIR = BIT_6;
+    stp3.DIR = BIT_12;
 
     //setting step pins for motors
     stp1.STP = BIT_1;
