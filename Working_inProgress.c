@@ -14,7 +14,7 @@
 //RB0   -   DIR pin for stepper 1 (x-axis)
 //RB1   -   STP pin for stepper 1 (x-axis)
 //RB2   -   Button to Confirm Material Load
-//RB3   -   Not Used
+//RB3   -   Green LED for indication purposes
 //RB4   -   DIR pin for stepper 2 (y-axis)
 //RB5   -   STP pin for stepper 2 (y-axis)
 //RB6   -   DIR pin for stepper 3 (z-axis)
@@ -23,10 +23,10 @@
 //RB9   -   ~STP pin for stepper 2 (z-axis)
 //RB10  -   UART2 RX
 //RB11  -   DC Motor Enable pin
-//RB12  -   Not Used
-//RB13  -   Not Used
+//RB12  -   Reset for stepper 1
+//RB13  -   Reset for stepper 2
 //RB14  -   Not Used
-//RB15  -   Not Used
+//RB15  -   Red LED for indication purposes
 
 
 
@@ -39,13 +39,13 @@
 /*DEFINES FOR ALL CONSTANTS USED IN PROGRAM*/
 //=======================================================================================
 //image size parameters
-#define x_dim 30
-#define y_dim 40
+#define x_dim 20
+#define y_dim 15
 
 // frequency of x and y motor stepping (max), currently at a step ever 1 msec (2 interrupts)
-#define generate_period_y  20000
+#define generate_period_xy  20000
 //frequency of z stepper rotation, currently once every 6 msec
-#define generate_period_xz  120000
+#define generate_period_z  300000
 //=======================================================================================
 
 /*ALL UNIQUE STRUCTS REQUIRED FOR OPERATION*/
@@ -64,7 +64,7 @@ struct Stepper_Motor_L{     //for stepper motor driver L298N
     int STP;        //third input pin
     int NSTP;       //fourth input pin, inverse of STP
     volatile int stpLeft;    //steps left on the current stepper
-    volatile int pos_motion;         //if the motion is towards or away from motor
+    int pos_motion;         //if the motion is towards or away from motor
     
 };
 
@@ -83,19 +83,19 @@ static struct pt pt_serial,   //protothread to import data via UART
 // The following threads are necessary for UART control
 static struct pt pt_input, pt_output, pt_DMA_output;
 
-struct Stepper_Motor stp2;     //the stepper motors in use, easy stepper driver board
-struct Stepper_Motor_L stp1,stp3;        // L298 stepper motor driver
+struct Stepper_Motor stp1,stp2;     //the stepper motors in use, easy stepper driver board
+struct Stepper_Motor_L stp3;        // L298 stepper motor driver
 struct DC_Motor dc1;                //dc motor 
 
 //image data array that holds pixelated info of image
-static unsigned short image[x_dim][y_dim];
+static unsigned short image[x_dim][y_dim] = {0};
 
 //state variables for the process
-volatile int keep_moving,       //a state to determine if there are steps remaining to move
-        image_carved,           //a state variable to determine if the image is carved yet or not
-        data_loaded,            //a state variable to determine if the image is loaded or not
-        aligned,                //a state variable to determine if the device is aligned or not
-        material_loaded;        //a state that determines if material has been loaded into the device
+volatile int keep_moving = 0;    //a state to determine if there are steps remaining to move
+volatile int         image_carved = 0;           //a state variable to determine if the image is carved yet or not
+  volatile int       data_loaded = 0;       //a state variable to determine if the image is loaded or not
+  volatile int       aligned = 0;        //a state variable to determine if the device is aligned or not
+  volatile int       material_loaded = 0;        //a state that determines if material has been loaded into the device
 //=======================================================================================
 
 
@@ -109,6 +109,12 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
    
     //move x and y if z is complete
     else {
+//        //x movement
+        if(stp1.stpLeft > 0){
+            mPORTBToggleBits(stp1.STP);
+            stp1.stpLeft--;
+        }
+        
         //y movement
         if(stp2.stpLeft > 0){
             mPORTBToggleBits(stp2.STP);
@@ -135,7 +141,11 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
 {       
         //checking to make sure z still needs to step
         if(stp3.stpLeft > 0){
-            if(stp3.pos_motion == 0){    //turn one direction to lower
+//            mPORTBClearBits(stp3.DIR);
+//                    mPORTBClearBits(stp3.STP);
+//                    mPORTBClearBits(stp3.NDIR);
+//                    mPORTBClearBits(stp3.NSTP);
+            if(stp3.pos_motion == 0){    //turn one direction 
                 //determining which state the input needs and setting
                 //the appropriate bits of the stepper motor driver
                 if(ct==0){ //1010
@@ -202,75 +212,14 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
             }
             stp3.stpLeft--;
         }
-        else if(stp1.stpLeft > 0){
-            if(stp1.pos_motion == 0){    //turn one direction to lower
-                //determining which state the input needs and setting
-                //the appropriate bits of the stepper motor driver
-                if(ct==0){ //1010
-                    mPORTBSetBits(stp1.DIR);
-                    mPORTBSetBits(stp1.STP);
-                    mPORTBClearBits(stp1.NDIR);
-                    mPORTBClearBits(stp1.NSTP);
-                    ct++;
-                }
-                else if(ct==1){ //0110
-                    mPORTBSetBits(stp1.NDIR);
-                    mPORTBSetBits(stp1.STP);
-                    mPORTBClearBits(stp1.DIR);
-                    mPORTBClearBits(stp1.NSTP);
-                    ct++;
-                }
-                else if(ct==2){  //0101
-                    mPORTBSetBits(stp1.NDIR);
-                    mPORTBSetBits(stp1.NSTP);
-                    mPORTBClearBits(stp1.DIR);
-                    mPORTBClearBits(stp1.STP);
-                    ct++;
-                }
-                else if(ct==3){ //1001
-                    mPORTBSetBits(stp1.DIR);
-                    mPORTBSetBits(stp1.NSTP);
-                    mPORTBClearBits(stp1.NDIR);
-                    mPORTBClearBits(stp1.STP);
-                    ct = 0;
-                }
-            }
-            
-            else{    //turn opposite direction to raise 
-                //determining which state the input needs and setting
-                //the appropriate bits of the stepper motor driver
-                if(ct==0){ //1001
-                    mPORTBSetBits(stp1.DIR);
-                    mPORTBSetBits(stp1.NSTP);
-                    mPORTBClearBits(stp1.NDIR);
-                    mPORTBClearBits(stp1.STP);
-                    ct++;
-                }
-                else if(ct==1){ //0101
-                    mPORTBSetBits(stp1.NDIR);
-                    mPORTBSetBits(stp1.NSTP);
-                    mPORTBClearBits(stp1.DIR);
-                    mPORTBClearBits(stp1.STP);
-                    ct++;
-                }
-                else if(ct==2){  //0110
-                    mPORTBSetBits(stp1.NDIR);
-                    mPORTBSetBits(stp1.STP);
-                    mPORTBClearBits(stp1.DIR);
-                    mPORTBClearBits(stp1.NSTP);
-                    ct++;
-                }
-                else if(ct==3){ //1010
-                    mPORTBSetBits(stp1.DIR);
-                    mPORTBSetBits(stp1.STP);
-                    mPORTBClearBits(stp1.NDIR);
-                    mPORTBClearBits(stp1.NSTP);
-                    ct = 0;
-                }
-            }
-            stp1.stpLeft--;
+        else{   //saves resting current
+            ct=0;
+            mPORTBClearBits(stp3.DIR);
+            mPORTBClearBits(stp3.STP);
+            mPORTBClearBits(stp3.NDIR);
+            mPORTBClearBits(stp3.NSTP);
         }
-    
+              
         //clear the interrupt flag
         mT3ClearIntFlag();
 }
@@ -279,35 +228,45 @@ void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
 
 
 // === Move Thread =================================================
-/*TODO: STEPPER CALCS*/
-//calculate how many rotations each stepper needs to reach the next location
-//also will determine if needs to raise or not between locations
 
 //this thread finds the next location to travel to, and calculates the steps needed to get there
 //then it sets those steps for each axis and yields until the motion is complete
 //the DC motor is turned on, or remains on, if the location is to be removed
 
-//currently each change in x and y is 585 steps in the x and y direction
+//currently each change in x and y is 585 steps, z axis is a change of 2000
 static PT_THREAD (protothread_move(struct pt *pt))
 {
     PT_BEGIN(pt);
+    
     //wait until the board is aligned, material is loaded, and the data is loaded
+    PT_YIELD_UNTIL(&pt_move, data_loaded ==1);
     PT_YIELD_UNTIL(&pt_move, material_loaded ==1);    
-    PT_YIELD_UNTIL(&pt_move, data_loaded ==1); 
  
     //the x and y positions in the image array at start target positions at end of loops
     static int x_pos, y_pos;
-
-    stp1.pos_motion = 0;    //ensure that x is going the correct
-                                //direction
     
+    mPORTBSetBits(BIT_2);
+        //===================================================
+/*THIS MAY OR MAY NOT BE CORRECT*/
+    mPORTBSetBits(stp1.DIR);    //ensure that x is going the correct
+                                //direction
+    mPORTBSetBits(BIT_13);
+    
+    //===================================================
     
     
     //looping through all entries in the image array
     for(x_pos = 0; x_pos < x_dim; x_pos++){         //x coordinates iterated slowly
         
-        mPORTBSetBits(stp2.DIR);    //ensure that y is going the correct
+        
+        
+        //===================================================
+/*THIS MAY OR MAY NOT BE CORRECT*/
+        mPORTBClearBits(stp2.DIR);    //ensure that y is going the correct
                                     //direction
+        //===================================================
+        mPORTBSetBits(BIT_12);
+        
         
         
         //this loop looks at the next y coordinate for the current x and determines
@@ -328,7 +287,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
                     //set the state to move the opposite direction
                     stp3.pos_motion = 1;
                     //raise the z axis
-                    stp3.stpLeft = 737;  //-----------------------------
+                    stp3.stpLeft =2000;  //737 was prev value
                 }
 
                 else{               //already raised
@@ -350,7 +309,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
                     stp3.pos_motion = 0;
                     
                     //lower the z axis
-                    stp3.stpLeft = 737; //-----------------------------
+                    stp3.stpLeft = 2000; //-----------------------------
 
                 }
 
@@ -358,7 +317,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
                     stp3.stpLeft = 0;
                 }  
             }
-
+         
             //setting the steps to move in y
             stp2.stpLeft = 585;
 
@@ -374,8 +333,10 @@ static PT_THREAD (protothread_move(struct pt *pt))
         mPORTAClearBits(dc1.ENA);
         dc1.on = 0;
             
+        
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //handling changing direction for y to return to top of next column
-        mPORTBClearBits(stp2.DIR); 
+        mPORTBSetBits(stp2.DIR); 
         
         //checking if z is raised or not, if not raising it
         if(stp3.pos_motion ==0){    //currently lowered and needs to raise
@@ -383,7 +344,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
             //set the state to move the opposite direction
             stp3.pos_motion = 1;
             //raise the z axis
-            stp3.stpLeft = 737;  //-----------------------------
+            stp3.stpLeft = 2000;  //-----------------------------
 
         }
         else    stp3.stpLeft = 0;      //already raised
@@ -432,24 +393,26 @@ static PT_THREAD (protothread_align(struct pt *pt))
   PT_BEGIN(pt);
   
   //wait for the initial data to be loaded before aligning
-  //PT_YIELD_UNTIL(&pt_align, data_loaded ==1);
-  
+  PT_YIELD_UNTIL(&pt_align, data_loaded ==1);
+
+  static int start = 0;
   //this while runs until all buttons are pressed and everything is done aligning
   while(1){
       //align on the y axis first
-//      mPORTBSetBits(stp2.DIR);
-//      while(mPORTAReadBits(BIT_2) == 0){
-//          mPORTBSetBits(stp2.DIR);
-//          stp2.stpLeft = 50;
-//          stp1.stpLeft = 0;
-//          stp3.stpLeft = 0;
-//         keep_moving = 1;
-//        //halting until the desired position is reached
-//        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-//      }
+      while(mPORTAReadBits(BIT_2) == 0){
+          mPORTBSetBits(stp2.DIR);
+          stp2.stpLeft = 50;
+          stp1.stpLeft = 0;
+          stp3.stpLeft = 0;
+         keep_moving = 1;
+        //halting until the desired position is reached
+        PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+      }
+      mPORTBClearBits(BIT_13);
       
-      //finally align on z axis
       
+      
+      //align on z axis
       while(mPORTAReadBits(BIT_4) == 0){
           stp3.pos_motion = 0;
           stp3.stpLeft = 10;
@@ -457,32 +420,77 @@ static PT_THREAD (protothread_align(struct pt *pt))
           stp2.stpLeft = 0;
          keep_moving = 1;
         //halting until the desired position is reached
-        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+        PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
       }
       
-      //align on the x axis next
+     
+      //align on the x axis last
       while(mPORTAReadBits(BIT_3) == 0){
-          stp1.pos_motion = 1;
-          stp1.stpLeft = 10;
+
+          mPORTBClearBits(stp1.DIR);          
+          stp1.stpLeft = 50;
           stp2.stpLeft = 0;
           stp3.stpLeft = 0;
          keep_moving = 1;
         //halting until the desired position is reached
-        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+        PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
       }
+      mPORTBClearBits(BIT_12);
       
-      
-      
+    
+    
+    
+ 
       //after all alignments are done, wait for user to indicate material is loaded
       //then continue on with operation via other threads until complete
+    //LEDs to display this
+    mPORTBClearBits(BIT_15);
+      mPORTBSetBits(BIT_3);
       aligned = 1;
       while(mPORTBReadBits(BIT_2) ==0); //do nothing but wait
+      
+      if(start ==0){
+      //raising z to be completely clear
+    stp3.pos_motion = 1;
+    stp3.stpLeft = 2000;
+    stp1.stpLeft = 0;
+    stp2.stpLeft = 0;
+    keep_moving = 1;
+    
+    mPORTBSetBits(BIT_13);
+    
+    
+    //halting until the desired position is reached
+    PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+      
+      
+            mPORTBClearBits(stp2.DIR);
+       stp2.stpLeft = 2000;
+          stp1.stpLeft = 0;
+          stp3.stpLeft = 0;
+         keep_moving = 1;
+        //halting until the desired position is reached
+        PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+      
+      
+      
       
         //aligning to the corner of material
 
         /*TODO    ALIGN WITH CORNER OF BOARD AFTER ZEROING*/
-      
-      
+//      if(rz == 1){
+//        //Raising Z axis to load material
+        stp3.pos_motion = 0;
+        stp3.stpLeft = 2000;
+        stp1.stpLeft = 0;
+        stp2.stpLeft = 0;
+        keep_moving = 1;
+        //halting until the desired position is reached
+        PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+//        rz = 0;
+//      }
+        start = 1;
+      }
         //after finishing the alignment yield until alignment is needed again after operation
         material_loaded =1;
         PT_YIELD_UNTIL(&pt_align, aligned == 0);
@@ -563,16 +571,20 @@ void main(void) {
     INTEnableSystemMultiVectoredInt();
 
     // init the threads
-    //PT_INIT(&pt_serial);
-    //PT_INIT(&pt_move);
+    PT_INIT(&pt_serial);
+    PT_INIT(&pt_move);
     PT_INIT(&pt_align);
     // round-robin scheduler for threads
 
     //DECLARING BITS FOR LOAD SWITCHES
-    mPORTASetPinsDigitalIn(BIT_2);  //RB2
+    mPORTASetPinsDigitalIn(BIT_2);  //RA2
     mPORTASetPinsDigitalIn(BIT_3);  //RA3
     mPORTASetPinsDigitalIn(BIT_4);  //RA4
-    mPORTBSetPinsDigitalIn(BIT_2);  //RA2
+    mPORTBSetPinsDigitalIn(BIT_2);  //RB2
+    mPORTBSetPinsDigitalOut(BIT_15);  //RED LED
+    mPORTBClearBits(BIT_15);
+    mPORTBSetPinsDigitalOut(BIT_3);  //Green LED
+    mPORTBClearBits(BIT_3);
 
 
     //enabling pulldowns for all of the buttons
@@ -587,10 +599,6 @@ void main(void) {
     mPORTBSetPinsDigitalOut(BIT_1);
     mPORTBClearBits(BIT_0);
     mPORTBClearBits(BIT_1);
-     mPORTBSetPinsDigitalOut(BIT_13);
-    mPORTBSetPinsDigitalOut(BIT_14);
-    mPORTBClearBits(BIT_13);
-    mPORTBClearBits(BIT_14 );
     
     
     //DECLARING BITS FOR STEPPER PINS (Stepper 2)
@@ -598,6 +606,12 @@ void main(void) {
     mPORTBSetPinsDigitalOut(BIT_5);
     mPORTBClearBits(BIT_4);
     mPORTBClearBits(BIT_5);
+    
+    //DECLARING BITS FOR STEPPER RESET PINS
+    mPORTBSetPinsDigitalOut(BIT_12);
+    mPORTBSetPinsDigitalOut(BIT_13);
+    mPORTBSetBits(BIT_12);
+    mPORTBSetBits(BIT_13);
     
     //DECLARING BITS FOR STEPPER PINS (Stepper 3)
     mPORTBSetPinsDigitalOut(BIT_6);
@@ -643,10 +657,12 @@ void main(void) {
     aligned=0;
     material_loaded=0;
  
+     mPORTBSetBits(BIT_15);
+     mPORTBClearBits(BIT_3);
   
   while (1){
-      //PT_SCHEDULE(protothread_serial(&pt_serial));
-      //PT_SCHEDULE(protothread_move(&pt_move)); 
+      PT_SCHEDULE(protothread_serial(&pt_serial));
+      PT_SCHEDULE(protothread_move(&pt_move)); 
       PT_SCHEDULE(protothread_align(&pt_align)); 
   }
 } // main
