@@ -1,5 +1,5 @@
 # SCULPT
-**S**imulcum **C**reation **U**sing **L**inear **P**roduction **T**echniques
+**S**imulcrum **C**reation **U**sing **L**inear **P**roduction **T**echniques
 
 ## Purpose
 Basically a mini-CNC. Originally made to carve soap, but currently carves soft foam.
