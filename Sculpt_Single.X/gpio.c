@@ -93,7 +93,7 @@ void toggle_z(void) {mPORTBToggleBits(stp_3.STP);}
 void disable_x(void) 
 {
   mPORTAClearBits(stp_1.SLEEP);
-  turned_off = 1;
+  turned_on = 0;
 }
 void disable_y(void) 
 {
@@ -105,11 +105,7 @@ void disable_z(void) {
   turned_off = 1;
 }
 
-void enable_x(void)
-{
-  mPORTASetBits(stp_1.SLEEP);
-  turned_on = 1;
-}
+
 void enable_y(void)
 {
   mPORTBSetBits(stp_2.SLEEP);
