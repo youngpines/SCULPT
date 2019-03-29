@@ -37,6 +37,7 @@
 #define X_DIM 20
 #define Y_DIM 15
 #define Z_DIM 20
+#define SLEEP_TIME 2
 
 // Stepping Frequency of X & Y, every 1 msec
 #define XY_PERIOD  20000
@@ -88,54 +89,6 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
   // Clearing the interrupt flag
   mT2ClearIntFlag();
 }
-
-// == Timer 3 ISR ===================================================== 
-volatile uint8_t x_first_pass = 0;
-volatile uint8_t y_first_pass = 0;
-volatile uint8_t z_first_pass = 0;
-// Timer to wait ~1 ms after turning on sleep mode
-void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
-{       
-  if (x_turned_on == 1 && x_first_pass == 0) {
-    x_enable = 0;
-    x_first_pass = 1;
-  } else if (x_turned_on == 1 && x_first_pass == 1) {
-    x_enable = 1;
-    x_turned_on = 0;
-    x_first_pass = 0;
-  } else if (x_turned_off == 1) {
-    x_enable = 0;
-    x_turned_off = 0;
-  }
-  
-  if (y_turned_on == 1 && y_first_pass == 0) {
-    y_enable = 0;
-    y_first_pass = 1;
-  } else if (y_turned_on == 1 && y_first_pass == 1) {
-    y_enable = 1;
-    y_turned_on = 0;
-    y_first_pass = 0;
-  } else if (y_turned_off == 1) {
-    y_enable = 0;
-    y_turned_off = 0;
-  }
-  
-  if (z_turned_on == 1 && z_first_pass == 0) {
-    z_enable = 0;
-    z_first_pass = 1;
-  } else if (z_turned_on == 1 && z_first_pass == 1) {
-    z_enable = 1;
-    z_turned_on = 0;
-    z_first_pass = 0;
-  } else if (z_turned_off == 1) {
-    z_enable = 0;
-    z_turned_off = 0;
-  }
-  // Clear the interrupt flag
-  mT3ClearIntFlag();
-}
-//==================================================================
-
 
 // === Move Thread =================================================
 // Finds next location to travel to & calculates the steps needed to get there
@@ -235,10 +188,11 @@ static PT_THREAD (protothread_align(struct pt *pt))
     // Align on the y axis first
     while(read_limit_y() == 0) {
       set_dir_y(1);
+      enable_y();
+      PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 0;
       stp_2.stps_left = 50;
       stp_3.stps_left = 0;
-      enable_y();
       keep_moving = 1;
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
@@ -247,11 +201,12 @@ static PT_THREAD (protothread_align(struct pt *pt))
       
     // Align on z axis
     while(read_limit_z() == 0){
-      set_dir_z(1);
+      set_dir_z(1
+      enable_z();
+      PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 0;
       stp_2.stps_left = 10;
       stp_3.stps_left = 0;
-      enable_z();
       keep_moving = 1;
       //Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
@@ -260,11 +215,12 @@ static PT_THREAD (protothread_align(struct pt *pt))
       
     // Align on the x axis last
     while(read_limit_x() == 0){
-      set_dir_x(1);         
+      set_dir_x(1);  
+      enable_x();
+      PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 50;
       stp_2.stps_left = 0;
       stp_3.stps_left = 0;
-      enable_x();
       keep_moving = 1;
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
@@ -279,30 +235,33 @@ static PT_THREAD (protothread_align(struct pt *pt))
     if (start == 0){  
       // Raising z to be completely clear
       set_dir_z(1);
+      enable_z();
+      PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 0;
       stp_2.stps_left = 0;
       stp_3.stps_left = 2000;
-      enable_z();
       keep_moving = 1;  
       //halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
       disable_z();
       // Raising y to be completely clear
-      set_dir_y(1);
+      set_dir_y(1)
+      enable_y();
+      PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 0;
       stp_2.stps_left = 2000;
       stp_3.stps_left = 0;
-      enable_y();
       keep_moving = 1;
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
       disable_y();
       // Raising x to be completely clear
       set_dir_x(1);
+      enable_x();
+      PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 2000;
       stp_2.stps_left = 0;
       stp_3.stps_left = 0;
-      enable_x();
       keep_moving = 1;
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
@@ -372,10 +331,6 @@ void main(void) {
   OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1, XY_PERIOD);
   ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
   mT2ClearIntFlag(); // and clear the interrupt flag
-  // Setup timer3 - Z axis
-  OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_1, Z_PERIOD);
-  ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
-  mT3ClearIntFlag(); // and clear the interrupt flag
     
   // === config threads ==========
   // turns OFF UART support and debugger pin, unless defines are set
