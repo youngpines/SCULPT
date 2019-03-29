@@ -1,6 +1,5 @@
 #include "gpio.h"
 #include <plib.h>
-volatile uint8_t just_turned_on = 0;
 
 void init_limit_switches(void)
 {

@@ -5,13 +5,8 @@ typedef unsigned char uint8_t;
 // Structs
 struct stepper_t  stp_1, stp_2, stp_3; // x, y, z
 struct dc_motor_t dc;                 //dc motor 
-volatile uint8_t x_turned_off;
-volatile uint8_t y_turned_off;
-volatile uint8_t z_turned_off;
-volatile uint8_t x_turned_on;
-volatile uint8_t y_turned_on;
-volatile uint8_t z_turned_on;
-
+extern volatile uint8_t turned_off;
+extern volatile uint8_t turned_on;
 
 /********************* [ Structs ] ********************************************/
 struct stepper_t { // DRV8825 Driver
