@@ -34,8 +34,8 @@
 
 /*********************** [ Constants ] ****************************************/
 // Image Size
-#define X_DIM 2
-#define Y_DIM 5
+#define X_DIM 100
+#define Y_DIM 110
 #define Z_DIM 20
 #define SLEEP_TIME 2
 
@@ -53,7 +53,7 @@ static struct pt pt_serial, // thread to import data via UART
 static struct pt pt_input, pt_output, pt_DMA_output;
 
 // Data array holding pixelated info of image
-static unsigned short image[X_DIM][Y_DIM] = {0};
+static unsigned short image[X_DIM][Y_DIM];
 
 //state variables for the process
 volatile uint8_t keep_moving = 0;    //a state to determine if there are steps remaining to move
@@ -195,7 +195,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
   set_dc_state(0);
   // Tell align & data thread image has been carved and need to realign
   image_carved = 1;
-  aligned = 0;
+  load_start_cond();
     
   // Once done working through the image array just yield forever
   PT_YIELD_UNTIL(&pt_move, image_carved == 0);          
@@ -327,14 +327,16 @@ static PT_THREAD (protothread_serial(struct pt *pt))
     // in this case, when <enter> is pushed
     // now parse the string
     sscanf(PT_term_buffer, "%s %d", cmd, &value);
-    count++;
 
     switch(cmd[0]) {
     case 'p': // Load pixel values into the pixel array
       image[count%X_DIM][count/Y_DIM] = value;
+      count++;
+      toggle_RedLED();
       break;
     case 'e': // All data loaded, Terminate signal sent
       data_loaded = 1;
+      if (count == X_DIM*Y_DIM) set_GreenLED();
       PT_YIELD_UNTIL(&pt_serial, data_loaded == 0);
       break;
     default: // Do nothing                  
@@ -378,7 +380,7 @@ void main(void) {
   init_steppers();
   init_dc_motor();
   load_start_cond();
-  create_dummy_image();
+ // create_dummy_image();
   
   // Schedule the threads
   while (1){

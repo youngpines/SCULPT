@@ -4,22 +4,25 @@ import numpy, serial, time
 
 #opening up a serial port to transmit to the Microcontroller
 ser = serial.Serial(
-    port='/dev/ttyUSB1',        #the port can change based on which is used
+    port='/dev/ttyUSB0',        #the port can change based on which is used
     baudrate=9600,
     parity= serial.PARITY_NONE,
     stopbits=1,
     bytesize=8
 )
+print("Using ")
+print(ser.name)
 
 #opening up the target image
-im = Image.open('/Users/Jared/Desktop/blkln.jpg')
+im = Image.open('/home/ho-jung/Downloads/black_c.jpg')
 
 #displaying the target image for checking function
 im.show()
 
 #converting the image to greyscale and resizing
 grey = im.convert('L')
-size = 248, 128
+#size = 248, 128
+size = 100, 110
 grey = grey.resize(size,Image.LANCZOS)
 
 #displaying the final to ensure it worked well
@@ -29,8 +32,26 @@ grey.show()
 pixels = numpy.asarray(grey, dtype=numpy.uint8)
 
 #cycling through and writing all pixel values to the PIC
-for i in range(pixels.size[0]):
-    for j in range(pixels.size[1]):
-        ser.write(pixels[i][j])
+count = 0
+print("[ %s ] dimension of array" % str(pixels.shape))
+x_dim = "x " + size[1] + "\r"
+y_dim = "y " + size[0] + "\r"
+ser.write(str.encode(x_dim))
+time.sleep(0.03)
+ser.write(str.encode(y_dim))
+time.sleep(0.03)
 
+for i in range(size[1]):
+    for j in range(size[0]):
+        count += 1
+        print("[ %d ] out of [ %d ] uploading" % (count, (size[0]*size[1])))
+        val = "p " + str(pixels[i][j]) + "\r"
+        print("Writing [ %s ]" % val[ : -1])
+        ser.write(str.encode(val))
+        time.sleep(0.03)
 
+exit = "e\r"
+ser.write(str.encode(exit))
+time.sleep(1)
+ser.close()
+print("[ Done ] All pixels Loaded")
