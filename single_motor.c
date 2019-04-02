@@ -1,57 +1,83 @@
-#include "config.h"
+#include "config_1_2_3.h"
+#include "gpio.h"
 #include "pt_cornell_1_2_3.h"
 #include <stdlib.h>
 #include <math.h>
+#ifndef _SUPPRESS_PLIB_WARNING
+#define _SUPPRESS_PLIB_WARNING
+#endif
 
-#define NUM_STEPS 5000
-// Macros to enable pull down resistors
-#define EnablePullDownB(bits) CNPUBCLR=(bits); CNPDBSET=(bits)
-#define EnablePullDownA(bits) CNPUACLR=(bits); CNPDASET=(bits)
-#define LEDPIN BIT_3
-#define init_LED()               \
-  mPORTBSetPinsDigitalOut(LEDPIN); \
-  mPORTBClearBits(LEDPIN)
-#define toggle_LED() mPORTBToggleBits(LEDPIN)
-#define set_LED()    mPORTBSetBits(LEDPIN)
-#define clear_LED()  mPORTBClearBits(LEDPIN)
+#define NUM_STEPS_X 585
+#define NUM_STEPS_Z 7850
+typedef unsigned char uint8_t;
+volatile uint8_t turned_on = 0;
+volatile uint8_t turned_off = 0;
 
 /*****************************[ Structs ]**************************************/
-// Stepper Struct for DRV8825
-typedef struct {
-    int DIR;                 // DIRection pin
-    int STP;                 // STeP pin
-    int dir_move;            // Which direction to move
-    volatile int steps_left; // Steps left on the current stepper
-} stepper_t;
 struct stepper_t stp1;
 // Protothreads Structs
 static struct pt pt_move, pt_blink;
 
 /************************[ Shared Variables ]**********************************/
 volatile static int keep_moving = 1; // Determines if target's been met
-// Frequency of stepping (max), currently at a step ever 1 msec (2 interrupts)
-static const int generate_period_xy =  20000;
-// Frequency of z stepper rotation, currently once every 6 msec
-static const int generate_period_z = 120000;
+// Frequency of stepping (max), currently at a step every 500 uS
+static const int period_xyz = 24000;
+// Frequency of z stepper rotation, currently once every 1.5 msec
+static const int enable_time_break = 60000;
+
+void enable_x(void)
+{
+  turned_on = 0;
+  mPORTASetBits(stp_1.SLEEP);
+  //PT_YIELD_TIME_msec(1500);
+  turned_on = 1;
+}
+void enable_B(void)
+{
+  turned_on = 0;
+  mPORTBSetBits(stp_3.SLEEP);
+  //PT_YIELD_TIME_msec(1500);
+  turned_on = 1;
+}
 
 /*****************************[ ISRs ]*****************************************/
 // == Timer 2 ISR =====================================================
 // Steps the stepper motor
+volatile int enable = 0;
 void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 {
-    // Turn on LED during duration of pulse
-    if (stp1.stpLeft == NUM_STEPS) 
-        set_LED();
-    else if (stp1.stpLeft == 0) 
-        clear_LED();
+//    // Turn on LED during duration of pulse
+//    if (stp_1.stps_left == NUM_STEPS) 
+//        set_LED();
+//    else if (stp_1.stps_left == 0) 
+//        clear_LED();
     // Pulse until there's no steps left
-    if(stp1.stpLeft > 0){
-        mPORTBToggleBits(stp1.STP);
-        stp1.stpLeft--;      
+    if(turned_on && stp_1.stps_left > 0){
+    //if (stp_1.stps_left > 0){
+        mPORTBToggleBits(stp_1.STP);
+        stp_1.stps_left--;      
     }
+    if (stp_1.stps_left < 1000) set_RedLED();
+    if (stp_1.stps_left < 500) set_GreenLED();
     // Clear the interrupt flag
     mT2ClearIntFlag();
 }
+
+//void __ISR(_TIMER_3_VECTOR, ipl2) Timer3Handler(void)
+//{
+//  if (turned_on == 1 && first_pass == 0) {
+//    enable = 0;
+//    first_pass = 1;
+//  } else if (turned_on == 1 && first_pass == 1) {
+//    enable = 1;
+//    turned_on = 0;
+//    first_pass = 0;
+//  } else if (turned_off == 1) {
+//    enable = 0;
+//    turned_off = 0;
+//  }
+//  mT3ClearIntFlag();
+//}
 
 /*****************************[ Threads ]**************************************/
 // === Blinking Thread =================================================
@@ -61,7 +87,7 @@ static PT_THREAD (protothread_blink(struct pt *pt))
 {
     PT_BEGIN(pt);
     while(1) {
-        toggle_LED();
+        // toggle_RedLED();
         PT_YIELD_TIME_msec(500);
     }
     PT_END(pt);
@@ -72,7 +98,24 @@ static PT_THREAD (protothread_blink(struct pt *pt))
 static PT_THREAD (protothread_move(struct pt *pt))
 {
     PT_BEGIN(pt);
-    stp1.stpLeft = NUM_STEPS;
+    stp_1.stps_left = NUM_STEPS_X;
+    clear_RedLED(); clear_GreenLED();
+    while(read_mat_load() == 0) {
+        set_RedLED();
+    }
+    clear_RedLED(); clear_GreenLED();
+    set_dir_x(0);
+    enable_x();
+    PT_YIELD_TIME_msec(2);
+    while(stp_1.stps_left >0)
+      PT_YIELD(&pt_move);
+    disable_x();
+    //PT_YIELD_TIME_msec(2000);
+//    enable_x();
+//    PT_YIELD_TIME_msec(2);
+////    stp_1.stps_left = NUM_STEPS;
+//    while(stp_1.stps_left>0)
+//      PT_YIELD(&pt_move);
     keep_moving = 1;
     //halting until the desired position is reached
     PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
@@ -88,10 +131,15 @@ int main(void)
 {
     // === Config timer and output compares to make pulses ========
     // set up timer2 to generate the wave period
-    OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1, generate_period_xy);
+    OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1, period_xyz);
     ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
     mT2ClearIntFlag(); // and clear the interrupt flag
-  
+    
+//    // Setup timer3 - Z axis
+//    OpenTimer3(T3_ON | T3_SOURCE_INT | T3_PS_1_1, enable_time_break);
+//    ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
+//    mT3ClearIntFlag(); // and clear the interrupt flag
+    
     // === now the threads ===================================
     // Setup the threads
     PT_setup();
@@ -103,41 +151,11 @@ int main(void)
     PT_INIT(&pt_move);
     PT_INIT(&pt_blink);
  
-    //DECLARING BITS FOR STEPPER PINS (Stepper 1)
-    mPORTBSetPinsDigitalOut(BIT_0);
-    mPORTBSetPinsDigitalOut(BIT_1);
-    mPORTBSetBits(BIT_0);
-    mPORTBClearBits(BIT_1);
-    mPORTBSetPinsDigitalOut(BIT_13);
-    mPORTBSetBits(BIT_13);
-    
-    //DECLARING BITS FOR STEPPER PINS (Stepper 2)
-    mPORTBSetPinsDigitalOut(BIT_4);
-    mPORTBSetPinsDigitalOut(BIT_5);
-    mPORTBSetBits(BIT_4);
-    mPORTBClearBits(BIT_5);
-    mPORTBSetPinsDigitalOut(BIT_12);
-    mPORTBSetBits(BIT_12);
-    
-    
-    //DECLARING BITS FOR STEPPER PINS (Stepper 3)
-    mPORTBSetPinsDigitalOut(BIT_8);
-    mPORTBSetPinsDigitalOut(BIT_9);
-    mPORTBSetPinsDigitalOut(BIT_10);
-    mPORTBSetPinsDigitalOut(BIT_11);
-    mPORTBClearBits(BIT_8);
-    mPORTBClearBits(BIT_9);
-    mPORTBClearBits(BIT_10);
-    mPORTBClearBits(BIT_11);
-    
-    //setting direction pins for the motors
-    stp1.DIR = BIT_0; 
-    stp1.STP = BIT_1;
-    stp1.dirMove = 0;
-    stp1.stpLeft = 0;
+    init_RedLED();  init_GreenLED();
+    init_steppers();
+    init_limit_switches();
     
     // schedule the threads
-    init_LED();
     int q=0;
     while(q<10000000){
         q++;
