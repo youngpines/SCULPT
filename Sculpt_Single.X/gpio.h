@@ -13,7 +13,8 @@ struct stepper_t { // DRV8825 Driver
   int DIR;      // DIRection pin for driver
   int STP;      // STeP      pin for driver
   int SLEEP;    // SLEEP     pin for driver
-  int dir_move; // Direction to move, 0 CCW, 1 CW
+  volatile int dir_move; // Direction to move, 0 CCW, 1 CW
+  volatile int pos;
   volatile int stps_left; // Num steps left to go through
 };
 
@@ -31,13 +32,20 @@ struct dc_motor_t { // DC motor
   CNPUACLR = bits;            \
   CNPDASET = bits
 // Debug LED Functions
-#define LEDPIN BIT_3
-#define init_LED()                 \
-  mPORTBSetPinsDigitalOut(LEDPIN); \
-  mPORTBClearBits(LEDPIN)
-#define set_LED()   mPORTBSetBits(LEDPIN)
-#define clear_LED() mPORTBClearBits(LEDPIN)
-#define toggle_LED() mPORTBToggleBits(LEDPIN)
+#define RED_LED_PIN BIT_3
+#define GREEN_LED_PIN BIT_14
+#define init_RedLED()                 \
+  mPORTBSetPinsDigitalOut(RED_LED_PIN); \
+  mPORTBClearBits(RED_LED_PIN)
+#define set_RedLED()   mPORTBSetBits(RED_LED_PIN)
+#define clear_RedLED() mPORTBClearBits(RED_LED_PIN)
+#define toggle_RedLED() mPORTBToggleBits(RED_LED_PIN)
+#define init_GreenLED()                 \
+  mPORTBSetPinsDigitalOut(GREEN_LED_PIN); \
+  mPORTBClearBits(GREEN_LED_PIN)
+#define set_GreenLED()   mPORTBSetBits(GREEN_LED_PIN)
+#define clear_GreenLED() mPORTBClearBits(GREEN_LED_PIN)
+#define toggle_GreenLED() mPORTBToggleBits(GREEN_LED_PIN)
 
 void init_limit_switches(void);
 void init_steppers(void);
@@ -61,5 +69,6 @@ void enable_x(void);
 void enable_y(void);
 void enable_z(void);
 void set_dc_state(uint8_t on_or_off);
+void move(int stepper_num, struct stepper_t* stepper, int target_pos);
 
 #endif // GPIO_H

@@ -23,6 +23,7 @@ void init_steppers(void)
   stp_1.SLEEP = BIT_0;
   stp_1.dir_move = 0;
   stp_1.stps_left = 0;
+  stp_1.pos = 0;
   mPORTBSetPinsDigitalOut(stp_1.DIR);
   mPORTBSetPinsDigitalOut(stp_1.STP);
   mPORTASetPinsDigitalOut(stp_1.SLEEP);
@@ -125,4 +126,45 @@ void set_dc_state(uint8_t on_or_off) {
         mPORTBClearBits(dc.ENABLE);
         dc.on = 0;
     }
+}
+
+void move(int stepper_num, struct stepper_t* stepper, int target_pos) {
+  if (stepper->pos < target_pos) {  // z needs to be raised
+    set_dc_state(1);
+    switch(stepper_num) {
+      case 1:
+        set_dir_x(1);
+        enable_x();
+        break;
+      case 2:
+        set_dir_y(1);
+        enable_y();
+        break;
+      case 3:
+        set_dir_z(1);
+        enable_z();
+        break;
+      default:
+        break;
+    }
+    stepper->stps_left = target_pos - stepper->pos;  // 737 was prev value 
+  } else if (stepper->pos > target_pos) {   // requires z to be lowered
+    switch(stepper_num) {
+      case 1:
+        set_dir_x(0);
+        enable_x();
+        break;
+      case 2:
+        set_dir_y(0);
+        enable_y();
+        break;
+      case 3:
+        set_dir_z(0);
+        enable_z();
+        break;
+      default:
+        break;
+    }
+    stepper->stps_left = stepper->pos - target_pos;  // 737 was prev value
+  }
 }

@@ -7,6 +7,8 @@
       <itemPath>/home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.h</itemPath>
       <itemPath>/home/ho-jung/Downloads/Big_board_pt_1_2_3/pt_cornell_1_2_3.h</itemPath>
       <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/config_1_2_3.h</itemPath>
+      <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.h</itemPath>
+      <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -17,6 +19,9 @@
                    projectFiles="true">
       <itemPath>/home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c</itemPath>
       <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c</itemPath>
+      <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c</itemPath>
+      <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c</itemPath>
+      <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -26,6 +31,7 @@
   </logicalFolder>
   <sourceRootList>
     <Elem>/home/ho-jung/Downloads/Big_board_pt_1_2_3</Elem>
+    <Elem>/home/ho-jung/Downloads/Big_board_pt_1_2</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -150,6 +156,9 @@
         <property key="save-temps" value="false"/>
         <property key="wpo-lto" value="false"/>
       </C32Global>
+      <PKOBSKDEPlatformTool>
+        <property key="firmware.download.all" value="false"/>
+      </PKOBSKDEPlatformTool>
     </conf>
   </confs>
 </configurationDescriptor>

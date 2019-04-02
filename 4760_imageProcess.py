@@ -22,7 +22,7 @@ im.show()
 #converting the image to greyscale and resizing
 grey = im.convert('L')
 #size = 248, 128
-size = 100, 110
+size = 15, 10
 grey = grey.resize(size,Image.LANCZOS)
 
 #displaying the final to ensure it worked well
@@ -34,12 +34,12 @@ pixels = numpy.asarray(grey, dtype=numpy.uint8)
 #cycling through and writing all pixel values to the PIC
 count = 0
 print("[ %s ] dimension of array" % str(pixels.shape))
-x_dim = "x " + size[1] + "\r"
-y_dim = "y " + size[0] + "\r"
-ser.write(str.encode(x_dim))
-time.sleep(0.03)
-ser.write(str.encode(y_dim))
-time.sleep(0.03)
+#x_dim = "x " + size[1] + "\r"
+#y_dim = "y " + size[0] + "\r"
+#ser.write(str.encode(x_dim))
+#time.sleep(0.03)
+#ser.write(str.encode(y_dim))
+#time.sleep(0.03)
 
 for i in range(size[1]):
     for j in range(size[0]):

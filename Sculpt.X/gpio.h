@@ -2,26 +2,30 @@
 #define GPIO_H
 typedef unsigned char uint8_t;
 
-// Structs
-struct stepper_t  stp_1, stp_2, stp_3; // x, y, z
-struct dc_motor_t dc;                 //dc motor 
-extern volatile uint8_t x_enable;
-extern volatile uint8_t y_enable;
-extern volatile uint8_t z_enable;
-
 /********************* [ Structs ] ********************************************/
-struct stepper_t { // DRV8825 Driver
+struct stepper_motor_t { // DRV8825 Driver
   int DIR;      // DIRection pin for driver
   int STP;      // STeP      pin for driver
   int SLEEP;    // SLEEP     pin for driver
-  int dir_move; // Direction to move, 0 CCW, 1 CW
+  int stp_num;
+  volatile int pos;
+  volatile int dir_move; // Direction to move, 0 CCW, 1 CW
   volatile int stps_left; // Num steps left to go through
 };
+typedef struct stepper_motor_t stepper_t;
 
 struct dc_motor_t { // DC motor
     int ENABLE; // Enable the motor, when 0 ignores `on`
     int on;     // Turn motor on (1) or off (0)
 };
+typedef struct dc_motor_t dc_t;
+
+// Structs
+stepper_t stp_1, stp_2, stp_3; // x, y, z
+dc_t dc;                 //dc motor 
+extern volatile uint8_t x_enable;
+extern volatile uint8_t y_enable;
+extern volatile uint8_t z_enable;
 
 /******************************* [ Macros ] ***********************************/
 // Enable Pulldowns
@@ -32,7 +36,7 @@ struct dc_motor_t { // DC motor
   CNPUACLR = bits;            \
   CNPDASET = bits
 // Debug LED Functions
-#define RED_LED_PIN BIT_3
+#define RED_LED_PIN BIT_15
 #define GREEN_LED_PIN BIT_14
 #define init_RedLED()                 \
   mPORTBSetPinsDigitalOut(RED_LED_PIN); \
@@ -48,26 +52,19 @@ struct dc_motor_t { // DC motor
 #define toggle_GreenLED() mPORTBToggleBits(GREEN_LED_PIN)
 
 void init_limit_switches(void);
-void init_steppers(void);
-void init_dc_motor(void);
-void load_start_cond(void);
+void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3);
+void init_dc_motor(dc_t* dc);
 
 uint8_t read_limit_x(void);
 uint8_t read_limit_y(void);
 uint8_t read_limit_z(void);
 uint8_t read_mat_load(void);
-void set_dir_x(uint8_t pos_mvmt);
-void set_dir_y(uint8_t pos_mvmt);
-void set_dir_z(uint8_t pos_mvmt);
-void toggle_x(void);
-void toggle_y(void);
-void toggle_z(void);
-void disable_x(void);
-void disable_y(void);
-void disable_z(void);
-void enable_x(void);
-void enable_y(void);
-void enable_z(void);
-void set_dc_state(uint8_t on_or_off);
 
+void set_dir(stepper_t* stp, uint8_t pos_mvmt);
+void get_dir(stepper_t* stp);
+void toggle_stp(stepper_t* stp);
+void disable_stp(stepper_t* stp);
+void enable_stp(stepper_t* stp);
+void set_dc_state(dc_t* dc, uint8_t on_or_off);
+void move(stepper_t* stepper, int target_pos);
 #endif // GPIO_H

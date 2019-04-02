@@ -45,17 +45,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=/home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c
+SOURCEFILES_QUOTED_IF_SPACED=/home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1100302049/gpio.o ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1100302049/gpio.o.d ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1100302049/gpio.o ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o ${OBJECTDIR}/_ext/1309489164/tft_gfx.o ${OBJECTDIR}/_ext/1309489164/tft_master.o ${OBJECTDIR}/_ext/1309489164/glcdfont.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1100302049/gpio.o.d ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d ${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d ${OBJECTDIR}/_ext/1309489164/tft_master.o.d ${OBJECTDIR}/_ext/1309489164/glcdfont.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/_ext/1100302049/gpio.o ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o
+OBJECTFILES=${OBJECTDIR}/_ext/1100302049/gpio.o ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o ${OBJECTDIR}/_ext/1309489164/tft_gfx.o ${OBJECTDIR}/_ext/1309489164/tft_master.o ${OBJECTDIR}/_ext/1309489164/glcdfont.o
 
 # Source Files
-SOURCEFILES=/home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c
+SOURCEFILES=/home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c
 
 
 CFLAGS=
@@ -106,6 +106,24 @@ ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o: /home/ho-jung/Desktop/Junior/SCUL
 	@${RM} ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d" -o ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c   
 	
+${OBJECTDIR}/_ext/1309489164/tft_gfx.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/tft_gfx.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d" -o ${OBJECTDIR}/_ext/1309489164/tft_gfx.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c   
+	
+${OBJECTDIR}/_ext/1309489164/tft_master.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/tft_master.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/tft_master.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/tft_master.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/tft_master.o.d" -o ${OBJECTDIR}/_ext/1309489164/tft_master.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c   
+	
+${OBJECTDIR}/_ext/1309489164/glcdfont.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/glcdfont.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/glcdfont.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/glcdfont.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/glcdfont.o.d" -o ${OBJECTDIR}/_ext/1309489164/glcdfont.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c   
+	
 else
 ${OBJECTDIR}/_ext/1100302049/gpio.o: /home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1100302049" 
@@ -118,6 +136,24 @@ ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o: /home/ho-jung/Desktop/Junior/SCUL
 	@${RM} ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d" -o ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c   
+	
+${OBJECTDIR}/_ext/1309489164/tft_gfx.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/tft_gfx.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d" -o ${OBJECTDIR}/_ext/1309489164/tft_gfx.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c   
+	
+${OBJECTDIR}/_ext/1309489164/tft_master.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/tft_master.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/tft_master.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/tft_master.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/tft_master.o.d" -o ${OBJECTDIR}/_ext/1309489164/tft_master.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c   
+	
+${OBJECTDIR}/_ext/1309489164/glcdfont.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/glcdfont.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/glcdfont.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/glcdfont.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/glcdfont.o.d" -o ${OBJECTDIR}/_ext/1309489164/glcdfont.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c   
 	
 endif
 
