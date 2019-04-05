@@ -247,10 +247,10 @@ static PT_THREAD (protothread_move(struct pt *pt))
 static PT_THREAD (protothread_align(struct pt *pt))
 {
   PT_BEGIN(pt);
-  // Wait for the initial data from serial thread before aligning
-  PT_YIELD_UNTIL(&pt_align, data_loaded == 1);
   static int start = 0;
   while(1) {
+    // Wait for the initial data from serial thread before aligning
+    PT_YIELD_UNTIL(&pt_align, data_loaded == 1);
     // Align on the y axis first
     while(read_limit_y() == 0) {
       set_dir(&stp_2, 0);

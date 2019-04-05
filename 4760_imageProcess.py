@@ -1,8 +1,8 @@
-#Importing the basic Image library 
+# Importing the basic Image library 
 from PIL import Image
 import numpy, serial, time
 
-#opening up a serial port to transmit to the Microcontroller
+# Opening up a serial port to transmit to the Microcontroller
 ser = serial.Serial(
     port='/dev/ttyUSB0',        #the port can change based on which is used
     baudrate=9600,
@@ -10,10 +10,9 @@ ser = serial.Serial(
     stopbits=1,
     bytesize=8
 )
-print("Using ")
-print(ser.name)
+print("Using [ " + ser.name + " ]")
 
-#opening up the target image
+# Opening up the target image
 im = Image.open('/home/ho-jung/Downloads/black_c.jpg')
 
 #displaying the target image for checking function
@@ -21,8 +20,7 @@ im.show()
 
 #converting the image to greyscale and resizing
 grey = im.convert('L')
-#size = 248, 128
-size = 15, 10
+size = 248, 128
 grey = grey.resize(size,Image.LANCZOS)
 
 #displaying the final to ensure it worked well
@@ -34,12 +32,6 @@ pixels = numpy.asarray(grey, dtype=numpy.uint8)
 #cycling through and writing all pixel values to the PIC
 count = 0
 print("[ %s ] dimension of array" % str(pixels.shape))
-#x_dim = "x " + size[1] + "\r"
-#y_dim = "y " + size[0] + "\r"
-#ser.write(str.encode(x_dim))
-#time.sleep(0.03)
-#ser.write(str.encode(y_dim))
-#time.sleep(0.03)
 
 for i in range(size[1]):
     for j in range(size[0]):
