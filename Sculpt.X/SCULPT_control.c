@@ -7,13 +7,8 @@
 #define _SUPPRESS_PLIB_WARNING
 #endif
 /* TODO
- * 1. Get DC Motor Driver
- * 2. Test out DC Motor Driver
- * 3. Test out an image
- * 4. Clean up Z dimensions and step amounts
- * 5. Find optimal X & Y steps also
- * 6. Find the best way to mount limit switches
- * 7. Mechanical X & Z fix
+ * 1. CAD Holes for limit switches
+ * 2. Mechanical X, Y, Z fix
  */
 //////////////////////////////////////
 //#define TFT 10
@@ -53,13 +48,13 @@
 
 /*********************** [ Constants ] ****************************************/
 // Image Size
-#define X_DIM 10
-#define Y_DIM 15
+#define X_DIM 4
+#define Y_DIM 4
 #define Z_DIM 20
-//#define STEP_X 585
+#define STEP_X 585
 //#define STEP_Y 585
-//#define STEP_Z 1000
-#define STEP_X 1000
+#define STEP_Z 1000
+//#define STEP_X 1000
 #define STEP_Y 1000
 #define STEP_Z 8
 #define SLEEP_TIME 2
@@ -69,8 +64,8 @@
 // Stepping Frequency of X & Y, every 6 msec
 #define Z_PERIOD 300000
 
-#define X_LIMIT 12500
-#define Z_LIMIT 12500
+#define X_LIMIT 7000
+#define Z_LIMIT 8000
 #define Y_LIMIT 7850
 typedef unsigned char uint8_t;
 static int debug_1 = 0;
@@ -106,9 +101,9 @@ void create_dummy_image() {
     int i, j, z;
     for (i = 0; i < X_DIM; i++) {
         for (j = 0; j < Y_DIM; j++) {
-            if (i == 0) image[i][j] = 5;
+            if (i == 0) image[i][j] = Z_LIMIT;
             if (i == 1) image[i][j] = 0;
-            if (i == 2) image[i][j] = 0;
+            if (i == 2) image[i][j] = 8500;
             if (i == 3) image[i][j] = 0;
             
         }
@@ -183,6 +178,8 @@ static PT_THREAD (protothread_move(struct pt *pt))
     // Looks at the next y coordinate for the current x and determines
     // if the drill needs to be raised or lowered for that entry
     for (y_pos = 0; y_pos < Y_DIM; y_pos++) { // Look ahead needs shift by 1
+      toggle_RedLED();
+      set_dc_state(&dc, 1);
       z_pos = image[x_pos][y_pos] * STEP_Z;
       move(&stp_3, z_pos);
       PT_YIELD_TIME_msec(2);
@@ -192,17 +189,19 @@ static PT_THREAD (protothread_move(struct pt *pt))
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_3);
       // Setting the steps to move in y
-      move(&stp_2, stp_2.pos + STEP_Y);
+      int y_pos = stp_2.pos;
+      move(&stp_2, y_pos + STEP_Y);
       PT_YIELD_TIME_msec(SLEEP_TIME);
       // Setting up for the ISR to move the position
       keep_moving = 1;
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_2);
-  //    PT_YIELD_TIME_msec(2000);
+ //     PT_YIELD_TIME_msec(2000);
     } 
       // DONE with y coordinate for a given x coordinate
       // Turn off the dc motor first to preserve integrity of piece
+    toggle_GreenLED();
       set_dc_state(&dc, 0);
       // Check if z is raised or not, if not raise it
       move(&stp_3, start_pos);
@@ -218,7 +217,8 @@ static PT_THREAD (protothread_move(struct pt *pt))
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_2);
-      move(&stp_1, stp_1.pos + STEP_X);
+      int x_pos = stp_1.pos;
+      move(&stp_1, x_pos + STEP_X);
       // Setting up for the ISR to move the position
       keep_moving = 1;
       // Halting until the desired position is reached
@@ -341,6 +341,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
     }
     // After finishing the alignment yield until alignment is needed again
     material_loaded = 1;
+    clear_RedLED();
     PT_YIELD_UNTIL(&pt_align, aligned == 0);
   }  
   PT_END(pt);
@@ -356,7 +357,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
   static int value;
   static int count = 0;
   while(1) { 
-      set_GreenLED();
+    //  set_GreenLED();
     // Send the prompt via DMA to serial
     sprintf(PT_send_buffer,"cmd>");
     // Spawning a print thread
@@ -379,6 +380,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
       break;
     case 'e': // All data loaded, Terminate signal sent
       data_loaded = 1;
+      clear_GreenLED();
       if (count == X_DIM*Y_DIM) clear_GreenLED();
       PT_YIELD_UNTIL(&pt_serial, data_loaded == 0);
       break;
@@ -487,12 +489,13 @@ void main(void) {
 //  //240x320 vertical display
 //  tft_setRotation(0); // Use tft_setRotation(1) for 320x240
   init_RedLED(); init_GreenLED();
+  //mPORTBSetPinsDigitalOut(BIT_3); mPORTBSetBits(BIT_3);
+  set_RedLED(); set_GreenLED();
   init_limit_switches();
   init_steppers(&stp_1, &stp_2, &stp_3);
-//  init_dc_motor();
+  init_dc_motor(&dc);
   load_start_cond();
-  //create_dummy_image();
-  
+  create_dummy_image();   
   // Schedule the threads
   while (1){
       PT_SCHEDULE(protothread_serial(&pt_serial));

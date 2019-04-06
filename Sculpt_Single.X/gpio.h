@@ -47,8 +47,8 @@ struct dc_motor_t { // DC motor
 #define clear_GreenLED() mPORTBClearBits(GREEN_LED_PIN)
 #define toggle_GreenLED() mPORTBToggleBits(GREEN_LED_PIN)
 
-void init_limit_switches(void);
-void init_steppers(void);
+void init_limit_switches2(void);
+void init_steppers2(void);
 void init_dc_motor(void);
 void load_start_cond(void);
 
@@ -69,6 +69,6 @@ void enable_x(void);
 void enable_y(void);
 void enable_z(void);
 void set_dc_state(uint8_t on_or_off);
-void move(int stepper_num, struct stepper_t* stepper, int target_pos);
+void move2(int stepper_num, struct stepper_t* stepper, int target_pos);
 
 #endif // GPIO_H

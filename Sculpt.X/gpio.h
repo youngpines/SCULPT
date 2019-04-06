@@ -36,7 +36,7 @@ extern volatile uint8_t z_enable;
   CNPUACLR = bits;            \
   CNPDASET = bits
 // Debug LED Functions
-#define RED_LED_PIN BIT_15
+#define RED_LED_PIN BIT_3
 #define GREEN_LED_PIN BIT_14
 #define init_RedLED()                 \
   mPORTBSetPinsDigitalOut(RED_LED_PIN); \

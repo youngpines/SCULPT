@@ -1,7 +1,7 @@
 #include "gpio.h"
 #include <plib.h>
 
-void init_limit_switches(void)
+void init_limit_switches2(void)
 {
   mPORTASetPinsDigitalIn(BIT_2);  // RA2 - Y axis
   mPORTASetPinsDigitalIn(BIT_3);  // RA3 - X axis
@@ -15,7 +15,7 @@ void init_limit_switches(void)
   EnablePullDownB(BIT_2); 
 }
 
-void init_steppers(void)
+void init_steppers2(void)
 {
   // Stepper 1 (X)
   stp_1.DIR   = BIT_0;
@@ -34,7 +34,7 @@ void init_steppers(void)
   // Stepper 2 (Y)
   stp_2.DIR   = BIT_4;
   stp_2.STP   = BIT_5;
-  stp_2.SLEEP = BIT_14;
+  stp_2.SLEEP = BIT_13;
   stp_2.dir_move = 0;
   stp_2.stps_left = 0;
   mPORTBSetPinsDigitalOut(stp_2.DIR);  // DIR
@@ -63,7 +63,7 @@ void init_dc_motor(void)
   dc.on = 0;
   dc.ENABLE = BIT_11;
   mPORTBSetPinsDigitalOut(dc.ENABLE);
-  mPORTBClearBits(dc.ENABLE);
+  mPORTBSetBits(dc.ENABLE);
 }
 
 uint8_t read_limit_x(void) {return mPORTAReadBits(BIT_3);}
@@ -128,7 +128,8 @@ void set_dc_state(uint8_t on_or_off) {
     }
 }
 
-void move(int stepper_num, struct stepper_t* stepper, int target_pos) {
+void move2(int stepper_num, struct stepper_t* stepper, int target_pos) {
+    /*
   if (stepper->pos < target_pos) {  // z needs to be raised
     set_dc_state(1);
     switch(stepper_num) {
@@ -167,4 +168,19 @@ void move(int stepper_num, struct stepper_t* stepper, int target_pos) {
     }
     stepper->stps_left = stepper->pos - target_pos;  // 737 was prev value
   }
+     * */
+   switch(stepper_num) {
+      case 1:
+        enable_x();
+        break;
+      case 2:
+        enable_y();
+        break;
+      case 3:
+        enable_z();
+        break;
+      default:
+        break;
+    }
+   stepper->stps_left = target_pos;
 }
