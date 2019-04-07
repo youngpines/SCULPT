@@ -45,17 +45,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=/home/ho-jung/Downloads/Big_board_pt_1_2_3/Single_Motor.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c
+SOURCEFILES_QUOTED_IF_SPACED=/home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/Single_Motor.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1100302049/Single_Motor.o ${OBJECTDIR}/_ext/661041487/gpio.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1100302049/Single_Motor.o.d ${OBJECTDIR}/_ext/661041487/gpio.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/661041487/gpio.o ${OBJECTDIR}/_ext/661041487/Single_Motor.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/661041487/gpio.o.d ${OBJECTDIR}/_ext/661041487/Single_Motor.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/_ext/1100302049/Single_Motor.o ${OBJECTDIR}/_ext/661041487/gpio.o
+OBJECTFILES=${OBJECTDIR}/_ext/661041487/gpio.o ${OBJECTDIR}/_ext/661041487/Single_Motor.o
 
 # Source Files
-SOURCEFILES=/home/ho-jung/Downloads/Big_board_pt_1_2_3/Single_Motor.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c
+SOURCEFILES=/home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/Single_Motor.c
 
 
 CFLAGS=
@@ -94,30 +94,30 @@ endif
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: compile
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/_ext/1100302049/Single_Motor.o: /home/ho-jung/Downloads/Big_board_pt_1_2_3/Single_Motor.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} "${OBJECTDIR}/_ext/1100302049" 
-	@${RM} ${OBJECTDIR}/_ext/1100302049/Single_Motor.o.d 
-	@${RM} ${OBJECTDIR}/_ext/1100302049/Single_Motor.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1100302049/Single_Motor.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1100302049/Single_Motor.o.d" -o ${OBJECTDIR}/_ext/1100302049/Single_Motor.o /home/ho-jung/Downloads/Big_board_pt_1_2_3/Single_Motor.c   
-	
 ${OBJECTDIR}/_ext/661041487/gpio.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/661041487" 
 	@${RM} ${OBJECTDIR}/_ext/661041487/gpio.o.d 
 	@${RM} ${OBJECTDIR}/_ext/661041487/gpio.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/661041487/gpio.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/661041487/gpio.o.d" -o ${OBJECTDIR}/_ext/661041487/gpio.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c   
 	
-else
-${OBJECTDIR}/_ext/1100302049/Single_Motor.o: /home/ho-jung/Downloads/Big_board_pt_1_2_3/Single_Motor.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} "${OBJECTDIR}/_ext/1100302049" 
-	@${RM} ${OBJECTDIR}/_ext/1100302049/Single_Motor.o.d 
-	@${RM} ${OBJECTDIR}/_ext/1100302049/Single_Motor.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1100302049/Single_Motor.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1100302049/Single_Motor.o.d" -o ${OBJECTDIR}/_ext/1100302049/Single_Motor.o /home/ho-jung/Downloads/Big_board_pt_1_2_3/Single_Motor.c   
+${OBJECTDIR}/_ext/661041487/Single_Motor.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/Single_Motor.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/661041487" 
+	@${RM} ${OBJECTDIR}/_ext/661041487/Single_Motor.o.d 
+	@${RM} ${OBJECTDIR}/_ext/661041487/Single_Motor.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/661041487/Single_Motor.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/661041487/Single_Motor.o.d" -o ${OBJECTDIR}/_ext/661041487/Single_Motor.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/Single_Motor.c   
 	
+else
 ${OBJECTDIR}/_ext/661041487/gpio.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/661041487" 
 	@${RM} ${OBJECTDIR}/_ext/661041487/gpio.o.d 
 	@${RM} ${OBJECTDIR}/_ext/661041487/gpio.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/661041487/gpio.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/661041487/gpio.o.d" -o ${OBJECTDIR}/_ext/661041487/gpio.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c   
+	
+${OBJECTDIR}/_ext/661041487/Single_Motor.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/Single_Motor.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/661041487" 
+	@${RM} ${OBJECTDIR}/_ext/661041487/Single_Motor.o.d 
+	@${RM} ${OBJECTDIR}/_ext/661041487/Single_Motor.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/661041487/Single_Motor.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/661041487/Single_Motor.o.d" -o ${OBJECTDIR}/_ext/661041487/Single_Motor.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/Single_Motor.c   
 	
 endif
 

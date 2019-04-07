@@ -15,8 +15,8 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>/home/ho-jung/Downloads/Big_board_pt_1_2_3/Single_Motor.c</itemPath>
       <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/gpio.c</itemPath>
+      <itemPath>/home/ho-jung/Desktop/Junior/SCULPT/Sculpt_Single.X/Single_Motor.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
