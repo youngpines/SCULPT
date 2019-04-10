@@ -45,17 +45,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=/home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c
+SOURCEFILES_QUOTED_IF_SPACED=/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/gpio.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1100302049/gpio.o ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o ${OBJECTDIR}/_ext/1309489164/tft_gfx.o ${OBJECTDIR}/_ext/1309489164/tft_master.o ${OBJECTDIR}/_ext/1309489164/glcdfont.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1100302049/gpio.o.d ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d ${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d ${OBJECTDIR}/_ext/1309489164/tft_master.o.d ${OBJECTDIR}/_ext/1309489164/glcdfont.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1309489164/SCULPT_control.o ${OBJECTDIR}/_ext/1309489164/tft_gfx.o ${OBJECTDIR}/_ext/1309489164/tft_master.o ${OBJECTDIR}/_ext/1309489164/glcdfont.o ${OBJECTDIR}/_ext/1309489164/gpio.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d ${OBJECTDIR}/_ext/1309489164/tft_gfx.o.d ${OBJECTDIR}/_ext/1309489164/tft_master.o.d ${OBJECTDIR}/_ext/1309489164/glcdfont.o.d ${OBJECTDIR}/_ext/1309489164/gpio.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/_ext/1100302049/gpio.o ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o ${OBJECTDIR}/_ext/1309489164/tft_gfx.o ${OBJECTDIR}/_ext/1309489164/tft_master.o ${OBJECTDIR}/_ext/1309489164/glcdfont.o
+OBJECTFILES=${OBJECTDIR}/_ext/1309489164/SCULPT_control.o ${OBJECTDIR}/_ext/1309489164/tft_gfx.o ${OBJECTDIR}/_ext/1309489164/tft_master.o ${OBJECTDIR}/_ext/1309489164/glcdfont.o ${OBJECTDIR}/_ext/1309489164/gpio.o
 
 # Source Files
-SOURCEFILES=/home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c
+SOURCEFILES=/home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_gfx.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/tft_master.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/gpio.c
 
 
 CFLAGS=
@@ -94,12 +94,6 @@ endif
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: compile
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/_ext/1100302049/gpio.o: /home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} "${OBJECTDIR}/_ext/1100302049" 
-	@${RM} ${OBJECTDIR}/_ext/1100302049/gpio.o.d 
-	@${RM} ${OBJECTDIR}/_ext/1100302049/gpio.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1100302049/gpio.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1100302049/gpio.o.d" -o ${OBJECTDIR}/_ext/1100302049/gpio.o /home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c   
-	
 ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
 	@${RM} ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d 
@@ -124,13 +118,13 @@ ${OBJECTDIR}/_ext/1309489164/glcdfont.o: /home/ho-jung/Desktop/Junior/SCULPT/Scu
 	@${RM} ${OBJECTDIR}/_ext/1309489164/glcdfont.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/glcdfont.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/glcdfont.o.d" -o ${OBJECTDIR}/_ext/1309489164/glcdfont.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c   
 	
-else
-${OBJECTDIR}/_ext/1100302049/gpio.o: /home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} "${OBJECTDIR}/_ext/1100302049" 
-	@${RM} ${OBJECTDIR}/_ext/1100302049/gpio.o.d 
-	@${RM} ${OBJECTDIR}/_ext/1100302049/gpio.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/1100302049/gpio.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1100302049/gpio.o.d" -o ${OBJECTDIR}/_ext/1100302049/gpio.o /home/ho-jung/Downloads/Big_board_pt_1_2_3/gpio.c   
+${OBJECTDIR}/_ext/1309489164/gpio.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/gpio.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/gpio.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/gpio.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/gpio.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/gpio.o.d" -o ${OBJECTDIR}/_ext/1309489164/gpio.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/gpio.c   
 	
+else
 ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/SCULPT_control.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
 	@${RM} ${OBJECTDIR}/_ext/1309489164/SCULPT_control.o.d 
@@ -154,6 +148,12 @@ ${OBJECTDIR}/_ext/1309489164/glcdfont.o: /home/ho-jung/Desktop/Junior/SCULPT/Scu
 	@${RM} ${OBJECTDIR}/_ext/1309489164/glcdfont.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1309489164/glcdfont.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/glcdfont.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/glcdfont.o.d" -o ${OBJECTDIR}/_ext/1309489164/glcdfont.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/glcdfont.c   
+	
+${OBJECTDIR}/_ext/1309489164/gpio.o: /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/gpio.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/1309489164" 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/gpio.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1309489164/gpio.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1309489164/gpio.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1309489164/gpio.o.d" -o ${OBJECTDIR}/_ext/1309489164/gpio.o /home/ho-jung/Desktop/Junior/SCULPT/Sculpt.X/gpio.c   
 	
 endif
 

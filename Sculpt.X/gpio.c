@@ -16,54 +16,54 @@ void init_limit_switches(void)
   EnablePullDownB(BIT_2); 
 }
 
-void init_steppers(void)
+void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3)
 {
   // Stepper 1 (X)
-  stp_1.DIR   = BIT_0;
-  stp_1.STP   = BIT_1;
-  stp_1.SLEEP = BIT_0;
-  stp_1.dir_move = 0;
-  stp_1.stps_left = 0;
-  mPORTBSetPinsDigitalOut(stp_1.DIR);
-  mPORTBSetPinsDigitalOut(stp_1.STP);
-  mPORTASetPinsDigitalOut(stp_1.SLEEP);
-  mPORTBClearBits(stp_1.DIR);
-  mPORTBClearBits(stp_1.STP);
-  mPORTAClearBits(stp_1.SLEEP);
+  stp_1->DIR   = BIT_0;
+  stp_1->STP   = BIT_1;
+  stp_1->SLEEP = BIT_0;
+  stp_1->dir_move = 0;
+  stp_1->stps_left = 0;
+  mPORTBSetPinsDigitalOut(stp_1->DIR);
+  mPORTBSetPinsDigitalOut(stp_1->STP);
+  mPORTASetPinsDigitalOut(stp_1->SLEEP);
+  mPORTBClearBits(stp_1->DIR);
+  mPORTBClearBits(stp_1->STP);
+  mPORTAClearBits(stp_1->SLEEP);
     
   // Stepper 2 (Y)
-  stp_2.DIR   = BIT_4;
-  stp_2.STP   = BIT_5;
-  stp_2.SLEEP = BIT_14;
-  stp_2.dir_move = 0;
-  stp_2.stps_left = 0;
-  mPORTBSetPinsDigitalOut(stp_2.DIR);  // DIR
-  mPORTBSetPinsDigitalOut(stp_2.STP);  // STP
-  mPORTBSetPinsDigitalOut(stp_2.SLEEP); // SLEEP
-  mPORTBClearBits(stp_2.DIR);
-  mPORTBClearBits(stp_2.STP);
-  mPORTBClearBits(stp_2.SLEEP);
+  stp_2->DIR   = BIT_4;
+  stp_2->STP   = BIT_5;
+  stp_2->SLEEP = BIT_14;
+  stp_2->dir_move = 0;
+  stp_2->stps_left = 0;
+  mPORTBSetPinsDigitalOut(stp_2->DIR);  // DIR
+  mPORTBSetPinsDigitalOut(stp_2->STP);  // STP
+  mPORTBSetPinsDigitalOut(stp_2->SLEEP); // SLEEP
+  mPORTBClearBits(stp_2->DIR);
+  mPORTBClearBits(stp_2->STP);
+  mPORTBClearBits(stp_2->SLEEP);
   
   // Stepper 3 (Z)
-  stp_3.DIR   = BIT_7;
-  stp_3.STP   = BIT_8;
-  stp_3.SLEEP = BIT_9;
-  stp_3.dir_move = 0;
-  stp_3.stps_left = 0;
-  mPORTBSetPinsDigitalOut(stp_3.DIR); // DIR
-  mPORTBSetPinsDigitalOut(stp_3.STP); // STP
-  mPORTBSetPinsDigitalOut(stp_3.SLEEP); // SLEEP
-  mPORTBClearBits(stp_3.DIR);
-  mPORTBClearBits(stp_3.STP);
-  mPORTBClearBits(stp_3.SLEEP);
+  stp_3->DIR   = BIT_7;
+  stp_3->STP   = BIT_8;
+  stp_3->SLEEP = BIT_9;
+  stp_3->dir_move = 0;
+  stp_3->stps_left = 0;
+  mPORTBSetPinsDigitalOut(stp_3->DIR); // DIR
+  mPORTBSetPinsDigitalOut(stp_3->STP); // STP
+  mPORTBSetPinsDigitalOut(stp_3->SLEEP); // SLEEP
+  mPORTBClearBits(stp_3->DIR);
+  mPORTBClearBits(stp_3->STP);
+  mPORTBClearBits(stp_3->SLEEP);
 }
 
-void init_dc_motor(void)
+void init_dc_motor(dc_t* dc)
 {
-  dc.on = 0;
-  dc.ENABLE = BIT_11;
-  mPORTBSetPinsDigitalOut(dc.ENABLE);
-  mPORTBClearBits(dc.ENABLE);
+  dc->on = 0;
+  dc->ENABLE = BIT_11;
+  mPORTBSetPinsDigitalOut(dc->ENABLE);
+  mPORTBClearBits(dc->ENABLE);
 }
 
 uint8_t read_limit_x(void) {return mPORTAReadBits(BIT_3);}
@@ -71,63 +71,103 @@ uint8_t read_limit_y(void) {return mPORTAReadBits(BIT_1);}
 uint8_t read_limit_z(void) {return mPORTAReadBits(BIT_4);}
 uint8_t read_mat_load(void) {return mPORTBReadBits(BIT_2);}
 
-void set_dir_x(uint8_t pos_mvmt) {
-  if (pos_mvmt == 1) 
-    mPORTBSetBits(stp_1.DIR);
-  else mPORTBClearBits(stp_1.DIR);
-}
-void set_dir_y(uint8_t pos_mvmt) {
-  if (pos_mvmt == 1) 
-    mPORTBSetBits(stp_2.DIR);
-  else mPORTBClearBits(stp_2.DIR);
-}
-void set_dir_z(uint8_t pos_mvmt) {
-  if (pos_mvmt == 1) 
-    mPORTBSetBits(stp_3.DIR);
-  else mPORTBClearBits(stp_3.DIR);
+void set_dir(stepper_t* stp, uint8_t pos_mvmt) 
+{
+  switch(stp->stp_num) {
+    case 1:
+      if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
+      else mPORTBClearBits(stp->DIR);
+      break;
+    case 2:
+      if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
+      else mPORTBClearBits(stp->DIR);
+      break;
+    case 3:
+      if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
+      else mPORTBClearBits(stp->DIR);
+      break;
+    default:
+      break;
+  }
 }
 
-void toggle_x(void) {mPORTBToggleBits(stp_1.STP);}
-void toggle_y(void) {mPORTBToggleBits(stp_2.STP);}
-void toggle_z(void) {mPORTBToggleBits(stp_3.STP);}
-
-void disable_x(void) 
+void toggle_stp(stepper_t* stp)
 {
-  x_enable = 0;
-  mPORTAClearBits(stp_1.SLEEP);
-}
-void disable_y(void) 
-{
-  y_enable = 0;
-  mPORTBClearBits(stp_2.SLEEP);
-}
-void disable_z(void) {
-  z_enable = 0;
-  mPORTBClearBits(stp_3.SLEEP);
+  switch(stp->stp_num) {
+    case 1:
+      mPORTBToggleBits(stp->STP);
+      break;
+    case 2:
+      mPORTBToggleBits(stp->STP);
+      break;
+    case 3:
+      mPORTBToggleBits(stp->STP);
+      break;
+    default:
+      break;
+  }
 }
 
-void enable_x(void)
+void disable_stp(stepper_t* stp) 
 {
-  mPORTASetBits(stp_1.SLEEP);
-  x_enable = 1;
-}
-void enable_y(void)
-{
-  mPORTBSetBits(stp_2.SLEEP);
-  y_enable = 1;
-}
-void enable_z(void)
-{
-  mPORTBSetBits(stp_3.SLEEP);
-  z_enable = 1;
+  switch(stp->stp_num) {
+    case 1:
+      x_enable = 0;
+      mPORTAClearBits(stp->SLEEP);
+      break;
+    case 2:
+      y_enable = 0;
+      mPORTBClearBits(stp->SLEEP);
+      break;
+    case 3:
+      z_enable = 0;
+      mPORTBClearBits(stp->SLEEP);
+      break;
+    default:
+      break;
+  }
 }
 
-void set_dc_state(uint8_t on_or_off) {
-    if (on_or_off == 1) {
-        mPORTBSetBits(dc.ENABLE);
-        dc.on = 1;
-    } else {
-        mPORTBClearBits(dc.ENABLE);
-        dc.on = 0;
-    }
+void enable_stp(stepper_t* stp)
+{
+  switch(stp->stp_num) {
+    case 1:
+      mPORTASetBits(stp->SLEEP);
+      x_enable = 0;
+      break;
+    case 2:
+      mPORTASetBits(stp->SLEEP);
+      y_enable = 0;
+      break;
+    case 3:
+      mPORTASetBits(stp->SLEEP);
+      z_enable = 0;
+      break;
+    default:
+      break;
+  }
+}
+
+void set_dc_state(dc_t* dc, uint8_t on_or_off)
+{
+  if (on_or_off == 1) {
+    mPORTBSetBits(dc->ENABLE);
+    dc->on = 1;
+  } else {
+    mPORTBClearBits(dc->ENABLE);
+    dc->on = 0;
+  }
+}
+
+void move(stepper_t* stp, int target_pos)
+{
+  int init_pos = stp->pos;
+  if (init_pos > target_pos) { // Need to lower
+    set_dir(stp, 0);
+    stp->stps_left = init_pos - target_pos;
+  } else {
+    set_dir(stp, 1);
+    stp->stps_left = target_pos - init_pos;
+  }
+  enable_stp(stp);
 }

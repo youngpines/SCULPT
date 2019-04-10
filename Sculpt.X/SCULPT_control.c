@@ -48,12 +48,12 @@
 
 /*********************** [ Constants ] ****************************************/
 // Image Size
-#define X_DIM 4
-#define Y_DIM 4
+#define X_DIM 128
+#define Y_DIM 128
 #define Z_DIM 20
 #define STEP_X 585
 //#define STEP_Y 585
-#define STEP_Z 1000
+//#define STEP_Z 1000
 //#define STEP_X 1000
 #define STEP_Y 1000
 #define STEP_Z 8

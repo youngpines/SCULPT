@@ -66,5 +66,5 @@ void toggle_stp(stepper_t* stp);
 void disable_stp(stepper_t* stp);
 void enable_stp(stepper_t* stp);
 void set_dc_state(dc_t* dc, uint8_t on_or_off);
-void move(stepper_t* stepper, int target_pos);
+void move(stepper_t* stp, int target_pos);
 #endif // GPIO_H
