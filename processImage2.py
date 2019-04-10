@@ -1,10 +1,12 @@
+#!/usr/bin/env python3
+
 # Importing the basic Image library 
 from PIL import Image
 import numpy, serial, time, argparse
 
-def openSerial(port, debug):
+def openSerial(port, baud, debug):
     # Open the Serial Port
-    ser = serial.Serial(port, baudrate = BAUDRATE,   \
+    ser = serial.Serial(port, baudrate = baud,   \
                         parity = serial.PARITY_NONE, \
                         stopbits = 1, bytesize = 8)
     if (debug):
@@ -63,9 +65,9 @@ def testParser(port, image, baud, x, y, d):
 ##########################
 def main():
     parser = argparse.ArgumentParser(description="SCULPT Image Processor")
-    parser.add_argument("-p", action="store", dest="port", \
+    parser.add_argument("-p", action="store", dest="port", required=True, \
             help="Port UART connection is opened (e.g. /dev/ttyUSB0")
-    parser.add_argument("-i", action="store", dest="file", \
+    parser.add_argument("-i", action="store", dest="file", required=True, \
             help="Absolute path  for image file to upload")
     parser.add_argument("-b", action="store", dest="baud", \
             help="Baudrate the  send pixels at", default=9600)
@@ -78,7 +80,7 @@ def main():
     r = parser.parse_args()
     
 #    testParser(r.port, r.file, r.baud, r.xdim, r.ydim, r.debug)
-    openSerial(r.port, r.debug)
+    openSerial(r.port, r.baud, r.debug)
     pixelArray = processImage(r.file, r.xdim, r.ydim, r.debug)
     sendPixels(pixelArray, r.debug)
 
