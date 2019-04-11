@@ -21,7 +21,7 @@ im.show()
 #converting the image to greyscale and resizing
 grey = im.convert('L')
 # size = 248, 128
-size = 5, 5
+size = 20, 20
 grey = grey.resize(size,Image.LANCZOS)
 
 #displaying the final to ensure it worked well

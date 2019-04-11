@@ -48,8 +48,8 @@
 
 /*********************** [ Constants ] ****************************************/
 // Image Size
-#define X_DIM 128
-#define Y_DIM 128
+#define X_DIM 20
+#define Y_DIM 20
 #define Z_DIM 20
 #define STEP_X 585
 //#define STEP_Y 585
@@ -68,12 +68,6 @@
 #define Z_LIMIT 8000
 #define Y_LIMIT 7850
 typedef unsigned char uint8_t;
-static int debug_1 = 0;
-static int debug_2 = 0;
-static volatile int debug_3 = 0;
-static int debug_4 = 0;
-static int debug_5 = 0;
-static int debug_6 = 0;
 
 /**************** [ Global Variables ] ****************************************/
 static struct pt pt_serial, // thread to import data via UART
@@ -108,6 +102,7 @@ void create_dummy_image() {
             
         }
     }
+    clear_GreenLED();
     data_loaded = 1;
 }
 void load_start_cond(void)
@@ -118,6 +113,8 @@ void load_start_cond(void)
   aligned         = 0;
   material_loaded = 0;
 }
+
+volatile int debug = 0;
 
 /************************* [ ISRs ] *******************************************/
 // == Timer 2 ISR =====================================================
@@ -131,22 +128,22 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
     if (stp_3.dir_move == 1) stp_3.pos++;
     else stp_3.pos--;
     if (stp_3.stps_left == 0) disable_stp(&stp_3);
-    if (aligned && stp_3.pos >= Z_LIMIT) stp_3.stps_left = 0;
-        
+    if (stp_3.pos >= Z_LIMIT) stp_3.stps_left = 0;
   } else if (x_enable && stp_1.stps_left > 0) {
     toggle_stp(&stp_1);
     stp_1.stps_left--;
     if (stp_1.dir_move == 1) stp_1.pos++;
     else stp_1.pos--;
     if (stp_1.stps_left == 0) disable_stp(&stp_1);
-    if (aligned && stp_1.pos >= X_LIMIT) stp_1.stps_left = 0;
+    if (stp_1.pos >= X_LIMIT) stp_1.stps_left = 0;
   } else if (y_enable && stp_2.stps_left > 0) {
+      if (debug) set_GreenLED();
     toggle_stp(&stp_2);
     stp_2.stps_left--;
     if (stp_2.dir_move == 1) stp_2.pos++;
     else stp_2.pos--;
     if (stp_2.stps_left == 0) disable_stp(&stp_2);
-    if (aligned && stp_2.pos >= Y_LIMIT) stp_2.stps_left = 0;
+    if (stp_2.pos >= Y_LIMIT) stp_2.stps_left = 0;
   }
 
   // Checking if all motors are done stepping, and if so then updating the state
@@ -201,7 +198,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
     } 
       // DONE with y coordinate for a given x coordinate
       // Turn off the dc motor first to preserve integrity of piece
-    toggle_GreenLED();
+      toggle_GreenLED();
       set_dc_state(&dc, 0);
       // Check if z is raised or not, if not raise it
       move(&stp_3, start_pos);
@@ -260,14 +257,12 @@ static PT_THREAD (protothread_align(struct pt *pt))
       stp_2.stps_left = 50;
       stp_3.stps_left = 0;
       keep_moving = 1;
-            debug_4 = 1;
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-      debug_5 = 1;
     }
-    debug_6 = 1;
-    stp_2.pos = 0;
     disable_stp(&stp_2);
+    stp_2.pos = 0;
+
       
     // Align on z axis
     while(read_limit_z() == 0){
@@ -281,9 +276,9 @@ static PT_THREAD (protothread_align(struct pt *pt))
       //Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
     }
-    stp_3.pos = 0;
     disable_stp(&stp_3);
-      
+    stp_3.pos = 0;
+   
     // Align on the x axis last
     while(read_limit_x() == 0){
       set_dir(&stp_1, 0);
@@ -296,8 +291,9 @@ static PT_THREAD (protothread_align(struct pt *pt))
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
     }
-    stp_1.pos = 0;
     disable_stp(&stp_1);
+    stp_1.pos = 0;
+
     // All alignments done, Wait for user to confirm material is loaded
     // Then use other threads until complete
     aligned = 1;
@@ -357,7 +353,6 @@ static PT_THREAD (protothread_serial(struct pt *pt))
   static int value;
   static int count = 0;
   while(1) { 
-    //  set_GreenLED();
     // Send the prompt via DMA to serial
     sprintf(PT_send_buffer,"cmd>");
     // Spawning a print thread
@@ -379,9 +374,8 @@ static PT_THREAD (protothread_serial(struct pt *pt))
       toggle_RedLED();
       break;
     case 'e': // All data loaded, Terminate signal sent
-      data_loaded = 1;
-      clear_GreenLED();
       if (count == X_DIM*Y_DIM) clear_GreenLED();
+      data_loaded = 1;
       PT_YIELD_UNTIL(&pt_serial, data_loaded == 0);
       break;
     default: // Do nothing                  
@@ -489,8 +483,6 @@ void main(void) {
 //  //240x320 vertical display
 //  tft_setRotation(0); // Use tft_setRotation(1) for 320x240
   init_RedLED(); init_GreenLED();
-  //mPORTBSetPinsDigitalOut(BIT_3); mPORTBSetBits(BIT_3);
-  set_RedLED(); set_GreenLED();
   init_limit_switches();
   init_steppers(&stp_1, &stp_2, &stp_3);
   init_dc_motor(&dc);
