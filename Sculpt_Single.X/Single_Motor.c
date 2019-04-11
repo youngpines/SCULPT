@@ -9,6 +9,7 @@
 
 #define NUM_STEPS_X 7000
 #define NUM_STEPS_Z 8000
+#define NUM_STEPS_Y 5000
 #define Z_START 3000
 typedef unsigned char uint8_t;
 volatile uint8_t turned_on = 0;
@@ -35,7 +36,7 @@ void enable_x(void)
 void enable_B(void)
 {
   turned_on = 0;
-  mPORTBSetBits(stp_3.SLEEP);
+  mPORTBSetBits(stp_2.SLEEP);
   //PT_YIELD_TIME_msec(1500);
   turned_on = 1;
 }
@@ -52,12 +53,12 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 //    else if (stp_1.stps_left == 0) 
 //        clear_LED();
    //  Pulse until there's no steps left
-    if(turned_on && stp_3.stps_left > 0){
+    if(turned_on && stp_2.stps_left > 0){
     //if (stp_1.stps_left > 0){
-        mPORTBToggleBits(stp_3.STP);
-        stp_3.stps_left--;      
+        mPORTBToggleBits(stp_2.STP);
+        stp_2.stps_left--;      
     }
-    if (stp_3.stps_left == 0) keep_moving = 0;
+    if (stp_2.stps_left == 0) keep_moving = 0;
     // Clear the interrupt flag
     mT2ClearIntFlag();
 }
@@ -101,17 +102,17 @@ static PT_THREAD (protothread_move(struct pt *pt))
 {
     PT_BEGIN(pt);
     set_GreenLED(); clear_RedLED();
-    stp_3.stps_left = NUM_STEPS_Z;
+    stp_2.stps_left = NUM_STEPS_Z;
     while(read_mat_load() == 0) {
         set_RedLED();
     }
     clear_RedLED(); clear_GreenLED();
-    mPORTBClearBits(stp_3.DIR);
-    enable_z();
+    mPORTBSetBits(stp_2.DIR);
+    enable_y();
 //    PT_YIELD_TIME_msec(2);
 //    while(stp_1.stps_left >0)
 //      PT_YIELD(&pt_move);
-    stp_3.stps_left = Z_START;
+    //stp_3.stps_left = NUM_STEPS;
     PT_YIELD_TIME_msec(2);
     //PT_YIELD_TIME_msec(2000);
 //    enable_x();
@@ -122,7 +123,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
     keep_moving = 1;
     //halting until the desired position is reached
     PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-     disable_z();
+     disable_y();
     while(1) {
         PT_YIELD(&pt_move);
     }

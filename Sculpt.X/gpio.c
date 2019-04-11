@@ -79,6 +79,8 @@ uint8_t read_mat_load(void) {return mPORTBReadBits(BIT_2);}
 
 void set_dir(stepper_t* stp, uint8_t pos_mvmt) 
 {
+    if (pos_mvmt == 1) stp->dir_move = 1;
+    else stp->dir_move = 0;
   switch(stp->stp_num) {
     case 1:
       if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
@@ -170,12 +172,20 @@ void set_dc_state(dc_t* dc, uint8_t on_or_off)
 void move(stepper_t* stp, int target_pos)
 {
   int init_pos = stp->pos;
+  int Z_LIMIT = 5000;
   if (init_pos > target_pos) { // Need to lower
+      set_RedLED();
     set_dir(stp, 0);
-    stp->stps_left = init_pos - target_pos;
+    int diff = init_pos - target_pos;
+    if (init_pos - diff < 0) diff = init_pos;
+    stp->stps_left = diff;
   } else {
+      clear_RedLED();
     set_dir(stp, 1);
-    stp->stps_left = target_pos - init_pos;
+    int diff = target_pos - init_pos;
+    if (stp->stp_num == 3)
+        if (init_pos + diff > Z_LIMIT) diff = Z_LIMIT - init_pos;
+    stp->stps_left = diff;
   }
   enable_stp(stp);
 }

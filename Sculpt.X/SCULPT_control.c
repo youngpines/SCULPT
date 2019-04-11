@@ -48,8 +48,8 @@
 
 /*********************** [ Constants ] ****************************************/
 // Image Size
-#define X_DIM 20
-#define Y_DIM 20
+#define X_DIM 10
+#define Y_DIM 10
 #define Z_DIM 20
 #define STEP_X 585
 //#define STEP_Y 585
@@ -66,6 +66,7 @@
 
 #define X_LIMIT 7000
 #define Z_LIMIT 8000
+//#define Z_LIMIT 5000
 #define Y_LIMIT 7850
 typedef unsigned char uint8_t;
 
@@ -78,7 +79,7 @@ static struct pt pt_input, pt_output, pt_DMA_output;
 //static struct pt pt_tft;
 
 // Data array holding pixelated info of image
-static unsigned short image[X_DIM][Y_DIM];
+static unsigned char image[X_DIM][Y_DIM];
 
 //state variables for the process
 volatile uint8_t keep_moving = 0;    //a state to determine if there are steps remaining to move
@@ -95,9 +96,9 @@ void create_dummy_image() {
     int i, j, z;
     for (i = 0; i < X_DIM; i++) {
         for (j = 0; j < Y_DIM; j++) {
-            if (i == 0) image[i][j] = Z_LIMIT;
-            if (i == 1) image[i][j] = 0;
-            if (i == 2) image[i][j] = 8500;
+            if (i == 0) image[i][j] = 3;
+            if (i == 1) image[i][j] = 2;
+            if (i == 2) image[i][j] = 1;
             if (i == 3) image[i][j] = 0;
             
         }
@@ -128,22 +129,18 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
     if (stp_3.dir_move == 1) stp_3.pos++;
     else stp_3.pos--;
     if (stp_3.stps_left == 0) disable_stp(&stp_3);
-    if (stp_3.pos >= Z_LIMIT) stp_3.stps_left = 0;
   } else if (x_enable && stp_1.stps_left > 0) {
     toggle_stp(&stp_1);
     stp_1.stps_left--;
     if (stp_1.dir_move == 1) stp_1.pos++;
     else stp_1.pos--;
     if (stp_1.stps_left == 0) disable_stp(&stp_1);
-    if (stp_1.pos >= X_LIMIT) stp_1.stps_left = 0;
   } else if (y_enable && stp_2.stps_left > 0) {
-      if (debug) set_GreenLED();
     toggle_stp(&stp_2);
     stp_2.stps_left--;
     if (stp_2.dir_move == 1) stp_2.pos++;
     else stp_2.pos--;
     if (stp_2.stps_left == 0) disable_stp(&stp_2);
-    if (stp_2.pos >= Y_LIMIT) stp_2.stps_left = 0;
   }
 
   // Checking if all motors are done stepping, and if so then updating the state
@@ -156,7 +153,7 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 
 // === Move Thread =================================================
 // Finds next location to travel to & calculates the steps needed to get there
-// Sets steps for each axis and yields until the motion is complete
+// Sets steps for each axis and yiel3ds until the motion is complete
 // DC motor is turned on, or remains on, if the location is to be removed
 static int move_start = 0;
 //currently each change in x and y is 585 steps, z axis is a change of 2000
@@ -167,6 +164,10 @@ static PT_THREAD (protothread_move(struct pt *pt))
   PT_YIELD_UNTIL(&pt_move, data_loaded == 1);
   PT_YIELD_UNTIL(&pt_move, material_loaded == 1); 
   move_start = 1;
+  set_RedLED();
+  PT_YIELD_TIME_msec(500);
+  clear_RedLED();
+  clear_GreenLED();
  
   // x and y positions in the image array at start target positions at end of loops
   static int x_pos, y_pos, z_pos;
@@ -175,9 +176,13 @@ static PT_THREAD (protothread_move(struct pt *pt))
     // Looks at the next y coordinate for the current x and determines
     // if the drill needs to be raised or lowered for that entry
     for (y_pos = 0; y_pos < Y_DIM; y_pos++) { // Look ahead needs shift by 1
-      toggle_RedLED();
+      //toggle_RedLED();
       set_dc_state(&dc, 1);
       z_pos = image[x_pos][y_pos] * STEP_Z;
+//      if (z_pos == 0) {set_RedLED(); clear_GreenLED();}
+//      if (z_pos == 8) {set_RedLED(); set_GreenLED();}
+//      if (z_pos == 16) {clear_RedLED(); set_GreenLED();}
+//      if (z_pos == 24) {clear_RedLED(); clear_GreenLED();}
       move(&stp_3, z_pos);
       PT_YIELD_TIME_msec(2);
       // Setting up for the ISR to move the position
@@ -198,7 +203,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
     } 
       // DONE with y coordinate for a given x coordinate
       // Turn off the dc motor first to preserve integrity of piece
-      toggle_GreenLED();
+      //toggle_GreenLED();
       set_dc_state(&dc, 0);
       // Check if z is raised or not, if not raise it
       move(&stp_3, start_pos);
@@ -249,6 +254,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
     // Wait for the initial data from serial thread before aligning
     PT_YIELD_UNTIL(&pt_align, data_loaded == 1);
     // Align on the y axis first
+    set_GreenLED();
     while(read_limit_y() == 0) {
       set_dir(&stp_2, 0);
       enable_stp(&stp_2);
@@ -337,7 +343,6 @@ static PT_THREAD (protothread_align(struct pt *pt))
     }
     // After finishing the alignment yield until alignment is needed again
     material_loaded = 1;
-    clear_RedLED();
     PT_YIELD_UNTIL(&pt_align, aligned == 0);
   }  
   PT_END(pt);
@@ -487,7 +492,7 @@ void main(void) {
   init_steppers(&stp_1, &stp_2, &stp_3);
   init_dc_motor(&dc);
   load_start_cond();
-  create_dummy_image();   
+  //create_dummy_image();   
   // Schedule the threads
   while (1){
       PT_SCHEDULE(protothread_serial(&pt_serial));
