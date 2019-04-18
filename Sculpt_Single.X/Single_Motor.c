@@ -9,8 +9,11 @@
 
 #define NUM_STEPS_X 7000
 #define NUM_STEPS_Z 8000
-#define NUM_STEPS_Y 5000
-#define Z_START 3000
+#define NUM_STEPS_Y 15000
+
+#define X_START 0
+#define Y_START 5000
+#define Z_START 2500
 typedef unsigned char uint8_t;
 volatile uint8_t turned_on = 0;
 volatile uint8_t turned_off = 0;
@@ -53,12 +56,12 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 //    else if (stp_1.stps_left == 0) 
 //        clear_LED();
    //  Pulse until there's no steps left
-    if(turned_on && stp_2.stps_left > 0){
+    if(turned_on && stp_1.stps_left > 0){
     //if (stp_1.stps_left > 0){
-        mPORTBToggleBits(stp_2.STP);
-        stp_2.stps_left--;      
+        mPORTBToggleBits(stp_1.STP);
+        stp_1.stps_left--;      
     }
-    if (stp_2.stps_left == 0) keep_moving = 0;
+    if (stp_1.stps_left == 0) keep_moving = 0;
     // Clear the interrupt flag
     mT2ClearIntFlag();
 }
@@ -102,28 +105,25 @@ static PT_THREAD (protothread_move(struct pt *pt))
 {
     PT_BEGIN(pt);
     set_GreenLED(); clear_RedLED();
-    stp_2.stps_left = NUM_STEPS_Z;
     while(read_mat_load() == 0) {
         set_RedLED();
     }
     clear_RedLED(); clear_GreenLED();
-    mPORTBSetBits(stp_2.DIR);
-    enable_y();
-//    PT_YIELD_TIME_msec(2);
-//    while(stp_1.stps_left >0)
-//      PT_YIELD(&pt_move);
-    //stp_3.stps_left = NUM_STEPS;
+    mPORTBClearBits(stp_1.DIR);
+    enable_x();
     PT_YIELD_TIME_msec(2);
-    //PT_YIELD_TIME_msec(2000);
-//    enable_x();
-//    PT_YIELD_TIME_msec(2);
-////    stp_1.stps_left = NUM_STEPS;
-//    while(stp_1.stps_left>0)
-//      PT_YIELD(&pt_move);
+    while(read_limit_x() == 0) stp_1.stps_left = 50;
+    set_RedLED();
+    disable_x();
+    stp_1.stps_left = NUM_STEPS_X;
+    mPORTBSetBits(stp_1.DIR);
+    enable_x();
+    PT_YIELD_TIME_msec(2);
     keep_moving = 1;
     //halting until the desired position is reached
     PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-     disable_y();
+    disable_x();
+    
     while(1) {
         PT_YIELD(&pt_move);
     }

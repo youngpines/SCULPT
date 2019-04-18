@@ -37,11 +37,12 @@ print("[ %s ] dimension of array" % str(pixels.shape))
 for i in range(size[1]):
     for j in range(size[0]):
         count += 1
-        print("[ %d ] out of [ %d ] uploading" % (count, (size[0]*size[1])))
+       # print("[ %d ] out of [ %d ] uploading" % (count, (size[0]*size[1])))
         val = "p " + str(pixels[i][j]) + "\r"
-        print("Writing [ %s ]" % val[ : -1])
+       # print("Writing [ %s ]" % val[ : -1])
+        print("%s," % val[ 2 : -1])
         ser.write(str.encode(val))
-        time.sleep(0.03)
+        time.sleep(0.0105)
 
 exit = "e\r"
 ser.write(str.encode(exit))

@@ -11,14 +11,14 @@
  * 2. Mechanical X, Y, Z fix
  */
 //////////////////////////////////////
-//#define TFT 10
-//// graphics libraries
-//#include "tft_master.h"
-//#include "tft_gfx.h"
-//// need for rand function
-//#include <stdlib.h>
-//// string buffer
-//char buffer[60];
+#define TFT 10
+// graphics libraries
+#include "tft_master.h"
+#include "tft_gfx.h"
+// need for rand function
+#include <stdlib.h>
+// string buffer
+char buffer[60];
 ////////////////////////////////////
 
 ////////////////////////////////////
@@ -51,12 +51,12 @@
 #define X_DIM 10
 #define Y_DIM 10
 #define Z_DIM 20
-#define STEP_X 585
+#define STEP_X 400
 //#define STEP_Y 585
 //#define STEP_Z 1000
 //#define STEP_X 1000
-#define STEP_Y 1000
-#define STEP_Z 8
+#define STEP_Y 585
+#define STEP_Z 50
 #define SLEEP_TIME 2
 
 // Stepping Frequency of X & Y, every 1 msec
@@ -65,10 +65,17 @@
 #define Z_PERIOD 300000
 
 #define X_LIMIT 7000
+#define Y_LIMIT 15000
 #define Z_LIMIT 8000
+#define X_START 0
+#define Y_START 5000
+//#define Z_START 2500
+#define Z_START 4000
 //#define Z_LIMIT 5000
-#define Y_LIMIT 7850
+//#define Y_LIMIT 7850
 typedef unsigned char uint8_t;
+volatile int debug1 = -1; 
+volatile int debug2 = -1;
 
 /**************** [ Global Variables ] ****************************************/
 static struct pt pt_serial, // thread to import data via UART
@@ -76,34 +83,41 @@ static struct pt pt_serial, // thread to import data via UART
                  pt_align;  // thread to align via limit switches
 // The following threads are necessary for UART control
 static struct pt pt_input, pt_output, pt_DMA_output;
-//static struct pt pt_tft;
+static struct pt pt_tft;
 
 // Data array holding pixelated info of image
-static unsigned char image[X_DIM][Y_DIM];
+static unsigned char image[X_DIM][Y_DIM] =  {
+    {0, 0, 0, 2, 3, 3, 2, 0, 0, 0},         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},  
+    {0, 2, 0,  54,  177, 173, 54, 0, 2, 0}, {1, 1, 9,  215, 83, 91, 164, 0, 2, 0},
+    {2, 0, 42, 202, 0,   0,   0,  0, 0, 0}, {1, 1, 17, 221, 37, 52, 152, 0, 1, 0},
+    {0, 2, 0,  92,  194, 194, 91, 0, 2, 0}, {0, 0, 1,  0,   8,  6,   0,  0, 0, 0},
+    {0, 0, 0,  3,   0,   0,   2,  0, 0, 0}, {0, 0, 0,  0,   1,  1,   0,  0, 0,0 }
+};
 
 //state variables for the process
 volatile uint8_t keep_moving = 0;    //a state to determine if there are steps remaining to move
 volatile uint8_t x_enable = 0;
 volatile uint8_t y_enable = 0;
 volatile uint8_t z_enable = 0;
-int start_pos = 100;
 volatile int image_carved = 0;   //a state variable to determine if the image is carved yet or not
 volatile int data_loaded = 0;    //a state variable to determine if the image is loaded or not
 volatile int aligned = 0;        // a state variable to determine if the device is aligned or not
 volatile int material_loaded = 0;// a state that determines if material has been loaded into the device
 
 void create_dummy_image() {
-    int i, j, z;
-    for (i = 0; i < X_DIM; i++) {
-        for (j = 0; j < Y_DIM; j++) {
-            if (i == 0) image[i][j] = 3;
-            if (i == 1) image[i][j] = 2;
-            if (i == 2) image[i][j] = 1;
-            if (i == 3) image[i][j] = 0;
-            
-        }
-    }
-    clear_GreenLED();
+//    int i, j, z;
+//    for (i = 0; i < X_DIM; i++) {
+//        for (j = 0; j < Y_DIM; j++) {
+//            if (i == 0) image[i][j] = 3;
+//            if (i == 1) image[i][j] = 2;
+//            if (i == 2) image[i][j] = 1;
+//            if (i == 3) image[i][j] = 0;
+//            
+//        }
+//    }
+
+
+    //clear_GreenLED();
     data_loaded = 1;
 }
 void load_start_cond(void)
@@ -126,8 +140,13 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
   if (z_enable && stp_3.stps_left > 0) {
     toggle_stp(&stp_3);
     stp_3.stps_left--;
-    if (stp_3.dir_move == 1) stp_3.pos++;
-    else stp_3.pos--;
+    if (stp_3.dir_move == 1) {
+        stp_3.pos++;
+        if (stp_3.pos == Z_LIMIT) disable_stp(&stp_3);
+    } else {
+        stp_3.pos--;
+        if (stp_3.pos == 0) disable_stp(&stp_3);
+    }
     if (stp_3.stps_left == 0) disable_stp(&stp_3);
   } else if (x_enable && stp_1.stps_left > 0) {
     toggle_stp(&stp_1);
@@ -164,20 +183,23 @@ static PT_THREAD (protothread_move(struct pt *pt))
   PT_YIELD_UNTIL(&pt_move, data_loaded == 1);
   PT_YIELD_UNTIL(&pt_move, material_loaded == 1); 
   move_start = 1;
-  set_RedLED();
+  //set_RedLED();
   PT_YIELD_TIME_msec(500);
-  clear_RedLED();
-  clear_GreenLED();
+  //clear_RedLED();
+  //clear_GreenLED();
  
   // x and y positions in the image array at start target positions at end of loops
   static int x_pos, y_pos, z_pos;
-  // Loop through all entries in the image array
+  // Loop through all entries in the image 
+  debug1 = 0; debug2 = 0; PT_YIELD(&pt_move);
   for (x_pos = 0; x_pos < X_DIM; x_pos++) { // x coordinates iterated slowly    
     // Looks at the next y coordinate for the current x and determines
     // if the drill needs to be raised or lowered for that entry
+      debug1 = x_pos;
     for (y_pos = 0; y_pos < Y_DIM; y_pos++) { // Look ahead needs shift by 1
       //toggle_RedLED();
-      set_dc_state(&dc, 1);
+      debug2 = y_pos;
+     // set_dc_state(&dc, 1);
       z_pos = image[x_pos][y_pos] * STEP_Z;
 //      if (z_pos == 0) {set_RedLED(); clear_GreenLED();}
 //      if (z_pos == 8) {set_RedLED(); set_GreenLED();}
@@ -199,21 +221,21 @@ static PT_THREAD (protothread_move(struct pt *pt))
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_2);
- //     PT_YIELD_TIME_msec(2000);
+      PT_YIELD_TIME_msec(2000);
     } 
       // DONE with y coordinate for a given x coordinate
       // Turn off the dc motor first to preserve integrity of piece
       //toggle_GreenLED();
-      set_dc_state(&dc, 0);
       // Check if z is raised or not, if not raise it
-      move(&stp_3, start_pos);
+      move(&stp_3, Z_START);
       PT_YIELD_TIME_msec(SLEEP_TIME);
       // Setting up for the ISR to move the position
       keep_moving = 1;
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_3);
-      move(&stp_2, start_pos);
+      //set_dc_state(&dc, 0);
+      move(&stp_2, Y_START);
       // Setting up for the ISR to move the position
       keep_moving = 1;
       // Halting until the desired position is reached
@@ -226,11 +248,11 @@ static PT_THREAD (protothread_move(struct pt *pt))
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_1);
-  //    PT_YIELD_TIME_msec(2000);
+      PT_YIELD_TIME_msec(2000);
   }
      
   // Turn off the dc motor 
-  set_dc_state(&dc, 0);
+  //set_dc_state(&dc, 0);
   // Tell align & data thread image has been carved and need to realign
   image_carved = 1;
   load_start_cond();
@@ -254,7 +276,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
     // Wait for the initial data from serial thread before aligning
     PT_YIELD_UNTIL(&pt_align, data_loaded == 1);
     // Align on the y axis first
-    set_GreenLED();
+  // set_tftLED();
     while(read_limit_y() == 0) {
       set_dir(&stp_2, 0);
       enable_stp(&stp_2);
@@ -312,7 +334,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
       PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 0;
       stp_2.stps_left = 0;
-      stp_3.stps_left = start_pos;
+      stp_3.stps_left = Z_START;
       keep_moving = 1;  
       //halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
@@ -322,7 +344,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
       enable_stp(&stp_2);
       PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 0;
-      stp_2.stps_left = start_pos;
+      stp_2.stps_left = Y_START;
       stp_3.stps_left = 0;
       keep_moving = 1;
       // Halting until the desired position is reached
@@ -332,7 +354,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
       set_dir(&stp_1, 1);
       enable_stp(&stp_1);
       PT_YIELD_TIME_msec(SLEEP_TIME);
-      stp_1.stps_left = start_pos;
+      stp_1.stps_left = X_START;
       stp_2.stps_left = 0;
       stp_3.stps_left = 0;
       keep_moving = 1;
@@ -358,6 +380,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
   static int value;
   static int count = 0;
   while(1) { 
+     // set_GreenLED();
     // Send the prompt via DMA to serial
     sprintf(PT_send_buffer,"cmd>");
     // Spawning a print thread
@@ -376,7 +399,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
     case 'p': // Load pixel values into the pixel array
       image[count%X_DIM][count/Y_DIM] = value;
       count++;
-      toggle_RedLED();
+      //toggle_RedLED();
       break;
     case 'e': // All data loaded, Terminate signal sent
       if (count == X_DIM*Y_DIM) clear_GreenLED();
@@ -391,7 +414,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
   PT_END(pt);
 } // serial thread
 
-/*
+
 static PT_THREAD (protothread_tft(struct pt *pt))
 {
     PT_BEGIN(pt);
@@ -402,33 +425,34 @@ static PT_THREAD (protothread_tft(struct pt *pt))
         // yield time 1 second
         PT_YIELD_TIME_msec(1000) ;
         // draw sys_time
-        tft_fillRoundRect(0, 70, 250, 80, 1, ILI9340_BLACK);// x,y,w,h,radius,color
+        tft_fillRoundRect(0, 70, 300, 80, 1, ILI9340_BLACK);// x,y,w,h,radius,color
         tft_setCursor(0, 10);
         tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-        sprintf(buffer,"%d", debug_3);
+//        sprintf(buffer,"%d", debug_3);
         tft_writeString(buffer);
-        if (debug_4) {
-            tft_setCursor(0, 30);
+
+        if (debug3) {
+            tft_setCursor(60, 30);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"s %d, e %d", stp_2.stps_left, y_enable);
+            sprintf(buffer,"toggle");
             tft_writeString(buffer);
         }
-//        if (debug_5) {
-//            tft_setCursor(30, 30);
-//            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-//            sprintf(buffer,"2 ");
-//            tft_writeString(buffer);
-//        }
-//        if (debug_6) {
-//            tft_setCursor(60, 30);
-//            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-//            sprintf(buffer,"3 ");
-//            tft_writeString(buffer);
-//        }
         if (aligned) {
             tft_setCursor(0, 30);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
             sprintf(buffer,"aligned");
+            tft_writeString(buffer);
+        }
+        if (debug1 != -1) {
+            tft_setCursor(0, 70);
+            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+            sprintf(buffer,"x %d", debug1);
+            tft_writeString(buffer);
+        }
+        if (debug2 != -1) {
+            tft_setCursor(40, 70);
+            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+            sprintf(buffer,"y %d", debug2);
             tft_writeString(buffer);
         }
         if (aligned) {
@@ -436,30 +460,24 @@ static PT_THREAD (protothread_tft(struct pt *pt))
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
             sprintf(buffer,"moved");
             tft_writeString(buffer);
-            tft_setCursor(0, 70);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"x: l %d, p %d, d %d", stp_1.stps_left, stp_1.pos, stp_1.dir_move);
-            tft_writeString(buffer);
             tft_setCursor(0, 90);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"y: l %d, p %d, d %d", stp_2.stps_left, stp_2.pos, stp_2.dir_move);
+            sprintf(buffer,"x: pos %d, s %d, d %d", stp_1.pos, stp_1.stps_left, stp_1.dir_move);
             tft_writeString(buffer);
             tft_setCursor(0, 110);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"z: d %d, l %d, p %d", stp_3.dir_move, stp_3.stps_left, stp_3.pos);
+            sprintf(buffer,"y: pos %d, s %d, d %d", stp_2.pos, stp_2.stps_left, stp_2.dir_move);
             tft_writeString(buffer);
-        }
-        if (debug_1) {
             tft_setCursor(0, 130);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"z: t %d, p %d", debug_2, debug_1);
+            sprintf(buffer,"z: pos %d, s %d, d %d", stp_3.pos, stp_3.stps_left, stp_3.dir_move);
             tft_writeString(buffer);
         }
         // NEVER exit while
       } // END WHILE(1)
   PT_END(pt);
 } // timer thread
-*/
+
 /************************** [ Main ] ******************************************/
 
 void main(void) { 
@@ -475,29 +493,30 @@ void main(void) {
   // === setup system wide interrupts  ========
   INTEnableSystemMultiVectoredInt();
   // init the threads
-  PT_INIT(&pt_serial);
+ // PT_INIT(&pt_serial);
   PT_INIT(&pt_move);
   PT_INIT(&pt_align);
- // PT_INIT(&pt_tft);
+  PT_INIT(&pt_tft);
  
   // Init everything else
    // init the display
-//  tft_init_hw();
-//  tft_begin();
-//  tft_fillScreen(ILI9340_BLACK);
-//  //240x320 vertical display
-//  tft_setRotation(0); // Use tft_setRotation(1) for 320x240
-  init_RedLED(); init_GreenLED();
+  tft_init_hw();
+  tft_begin();
+  tft_fillScreen(ILI9340_BLACK);
+  //240x320 vertical display
+  tft_setRotation(1); // Use tft_setRotation(1) for 320x240
+  //init_RedLED(); init_GreenLED();
+ // init_tftLED();
   init_limit_switches();
   init_steppers(&stp_1, &stp_2, &stp_3);
-  init_dc_motor(&dc);
+//  init_dc_motor(&dc);
   load_start_cond();
-  //create_dummy_image();   
+  create_dummy_image();  
   // Schedule the threads
   while (1){
-      PT_SCHEDULE(protothread_serial(&pt_serial));
+   //   PT_SCHEDULE(protothread_serial(&pt_serial));
       PT_SCHEDULE(protothread_move(&pt_move)); 
       PT_SCHEDULE(protothread_align(&pt_align)); 
-    //  PT_SCHEDULE(protothread_tft(&pt_tft));
+      PT_SCHEDULE(protothread_tft(&pt_tft));
   }
 } // main

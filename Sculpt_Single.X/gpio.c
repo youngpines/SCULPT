@@ -67,7 +67,7 @@ void init_dc_motor(void)
 }
 
 uint8_t read_limit_x(void) {return mPORTAReadBits(BIT_3);}
-uint8_t read_limit_y(void) {return mPORTAReadBits(BIT_1);}
+uint8_t read_limit_y(void) {return mPORTAReadBits(BIT_2);}
 uint8_t read_limit_z(void) {return mPORTAReadBits(BIT_4);}
 uint8_t read_mat_load(void) {return mPORTBReadBits(BIT_2);}
 
