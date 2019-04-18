@@ -6,28 +6,34 @@ void init_limit_switches2(void)
   mPORTASetPinsDigitalIn(BIT_2);  // RA2 - Y axis
   mPORTASetPinsDigitalIn(BIT_3);  // RA3 - X axis
   mPORTASetPinsDigitalIn(BIT_4);  // RA4 - Z axis
-  mPORTBSetPinsDigitalIn(BIT_2);  // RB2 - Confirm Material Loaded
+//  mPORTBSetPinsDigitalIn(BIT_2);  // RB2 - Confirm Material Loaded
+   mPORTBSetPinsDigitalIn(BIT_3);  // RB2 - Confirm Material Loaded
   
   // Enabling pulldowns for all buttons        
   EnablePullDownA(BIT_2);
   EnablePullDownA(BIT_3);
   EnablePullDownA(BIT_4);
-  EnablePullDownB(BIT_2); 
+//  EnablePullDownB(BIT_2); 
+  EnablePullDownB(BIT_3);
 }
 
 void init_steppers2(void)
 {
   // Stepper 1 (X)
-  stp_1.DIR   = BIT_0;
-  stp_1.STP   = BIT_1;
+  //stp_1.DIR   = BIT_0;
+    stp_1.DIR   = BIT_1;
+    stp_1.STP   = BIT_10;
+//  stp_1.STP   = BIT_1;
   stp_1.SLEEP = BIT_0;
   stp_1.dir_move = 0;
   stp_1.stps_left = 0;
   stp_1.pos = 0;
-  mPORTBSetPinsDigitalOut(stp_1.DIR);
+//  mPORTBSetPinsDigitalOut(stp_1.DIR);
+  mPORTASetPinsDigitalOut(stp_1.DIR);
   mPORTBSetPinsDigitalOut(stp_1.STP);
   mPORTASetPinsDigitalOut(stp_1.SLEEP);
-  mPORTBClearBits(stp_1.DIR);
+  //mPORTBClearBits(stp_1.DIR);
+  mPORTAClearBits(stp_1.DIR);
   mPORTBClearBits(stp_1.STP);
   mPORTAClearBits(stp_1.SLEEP);
     

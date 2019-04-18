@@ -1,6 +1,6 @@
 #include "config_1_2_3.h" // Modified to allow 9600 baudrate
 // threading library
-#define use_uart_serial
+//#define use_uart_serial
 #include "pt_cornell_1_2_3.h"
 #include "gpio.h"
 #ifndef _SUPPRESS_PLIB_WARNING

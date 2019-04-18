@@ -104,16 +104,16 @@ static PT_THREAD (protothread_blink(struct pt *pt))
 static PT_THREAD (protothread_move(struct pt *pt))
 {
     PT_BEGIN(pt);
-    set_GreenLED(); clear_RedLED();
+   // set_GreenLED(); clear_RedLED();
     while(read_mat_load() == 0) {
-        set_RedLED();
+       // set_RedLED();
     }
-    clear_RedLED(); clear_GreenLED();
+    //clear_RedLED(); clear_GreenLED();
     mPORTBClearBits(stp_1.DIR);
     enable_x();
     PT_YIELD_TIME_msec(2);
     while(read_limit_x() == 0) stp_1.stps_left = 50;
-    set_RedLED();
+    //set_RedLED();
     disable_x();
     stp_1.stps_left = NUM_STEPS_X;
     mPORTBSetBits(stp_1.DIR);
@@ -157,7 +157,7 @@ int main(void)
     PT_INIT(&pt_move);
     PT_INIT(&pt_blink);
  
-    init_RedLED();  init_GreenLED();
+    //init_RedLED();  init_GreenLED();
     init_steppers2();
     init_limit_switches2();
   //  set_RedLED(); set_GreenLED();

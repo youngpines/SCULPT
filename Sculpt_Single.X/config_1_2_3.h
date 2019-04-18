@@ -30,7 +30,7 @@
 
 // IF use_uart_serial IS defined, two pins are used by the uart
 // Go to pt_cornell_1_2_3.h and search for "SET UART i/o PINS"
-#define use_uart_serial
+//#define use_uart_serial
 #define BAUDRATE 9600 // must match PC terminal emulator setting 38400 works
 
 /////////////////////////////////
