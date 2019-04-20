@@ -6,10 +6,6 @@
 #ifndef _SUPPRESS_PLIB_WARNING
 #define _SUPPRESS_PLIB_WARNING
 #endif
-/* TODO
- * 1. CAD Holes for limit switches
- * 2. Mechanical X, Y, Z fix
- */
 //////////////////////////////////////
 #define TFT 10
 // graphics libraries
@@ -44,19 +40,21 @@ char buffer[60];
 //RB12  -   Not on Package
 //RB13  -   Enable stepper 2
 //RB14  -   Green Debug LED // tft
-//RB15  -   // red debug led
+//RB15  -   // dc motor enable
 
 /*********************** [ Constants ] ****************************************/
-// Image Size
-#define X_DIM 10
-#define Y_DIM 10
+// Image Size, max seems to be around 175 x 175
+#define X_DIM 20
+#define Y_DIM 20
 #define Z_DIM 20
+// was 400
 #define STEP_X 400
 //#define STEP_Y 585
 //#define STEP_Z 1000
 //#define STEP_X 1000
 #define STEP_Y 585
-#define STEP_Z 50
+// was 50
+#define STEP_Z 8
 #define SLEEP_TIME 2
 
 // Stepping Frequency of X & Y, every 1 msec
@@ -67,15 +65,19 @@ char buffer[60];
 #define X_LIMIT 7000
 #define Y_LIMIT 15000
 #define Z_LIMIT 8000
+//#define X_START 0
 #define X_START 0
-#define Y_START 5000
+#define Y_START 3500
+//#define Y_START 1500
 //#define Z_START 2500
-#define Z_START 4000
+#define Z_START 5000
 //#define Z_LIMIT 5000
 //#define Y_LIMIT 7850
 typedef unsigned char uint8_t;
 volatile int debug1 = -1; 
 volatile int debug2 = -1;
+int debug3 = -1;
+int debug4 = 0;
 
 /**************** [ Global Variables ] ****************************************/
 static struct pt pt_serial, // thread to import data via UART
@@ -86,13 +88,462 @@ static struct pt pt_input, pt_output, pt_DMA_output;
 static struct pt pt_tft;
 
 // Data array holding pixelated info of image
-static unsigned char image[X_DIM][Y_DIM] =  {
-    {0, 0, 0, 2, 3, 3, 2, 0, 0, 0},         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},  
-    {0, 2, 0,  54,  177, 173, 54, 0, 2, 0}, {1, 1, 9,  215, 83, 91, 164, 0, 2, 0},
-    {2, 0, 42, 202, 0,   0,   0,  0, 0, 0}, {1, 1, 17, 221, 37, 52, 152, 0, 1, 0},
-    {0, 2, 0,  92,  194, 194, 91, 0, 2, 0}, {0, 0, 1,  0,   8,  6,   0,  0, 0, 0},
-    {0, 0, 0,  3,   0,   0,   2,  0, 0, 0}, {0, 0, 0,  0,   1,  1,   0,  0, 0,0 }
+static unsigned char image[X_DIM][Y_DIM] = {
+{
+22,
+18,
+19,
+19,
+20,
+22,
+21,
+21,
+22,
+22,
+22,
+22,
+23,
+22,
+21,
+21,
+19,
+18,
+18,
+17,
+},
+{
+9,
+4,
+5,
+6,
+7,
+9,
+8,
+8,
+8,
+7,
+8,
+9,
+9,
+8,
+7,
+7,
+5,
+5,
+4,
+3,
+},
+{
+10,
+7,
+4,
+8,
+11,
+7,
+9,
+11,
+10,
+10,
+11,
+7,
+11,
+8,
+10,
+10,
+9,
+8,
+6,
+5,
+},
+{
+10,
+4,
+21,
+11,
+8,
+23,
+11,
+10,
+10,
+11,
+9,
+23,
+12,
+24,
+9,
+10,
+9,
+7,
+8,
+7,
+},
+{
+12,
+0,
+158,
+58,
+0,
+162,
+49,
+2,
+12,
+10,
+10,
+153,
+47,
+154,
+11,
+9,
+10,
+7,
+8,
+7,
+},
+{
+11,
+0,
+182,
+67,
+0,
+187,
+59,
+1,
+13,
+11,
+12,
+174,
+58,
+175,
+15,
+11,
+11,
+9,
+6,
+4,
+},
+{
+10,
+0,
+175,
+66,
+3,
+180,
+58,
+0,
+4,
+3,
+12,
+167,
+55,
+168,
+15,
+1,
+1,
+2,
+7,
+5,
+},
+{
+10,
+0,
+174,
+54,
+0,
+177,
+52,
+22,
+199,
+103,
+1,
+169,
+55,
+170,
+3,
+85,
+198,
+42,
+2,
+7,
+},
+{
+10,
+0,
+170,
+111,
+62,
+193,
+37,
+124,
+211,
+194,
+27,
+161,
+56,
+162,
+23,
+196,
+222,
+153,
+0,
+8,
+},
+{
+10,
+0,
+165,
+249,
+242,
+225,
+40,
+164,
+22,
+141,
+74,
+149,
+58,
+151,
+71,
+167,
+20,
+181,
+16,
+3,
+},
+{
+9,
+0,
+164,
+162,
+131,
+197,
+58,
+164,
+33,
+138,
+91,
+144,
+59,
+145,
+94,
+137,
+0,
+167,
+38,
+0,
+},
+{
+8,
+0,
+166,
+50,
+0,
+165,
+64,
+183,
+215,
+216,
+62,
+148,
+58,
+143,
+99,
+128,
+2,
+164,
+43,
+0,
+},
+{
+8,
+0,
+164,
+62,
+3,
+166,
+65,
+159,
+62,
+38,
+13,
+156,
+55,
+142,
+92,
+130,
+0,
+168,
+38,
+0,
+},
+{
+8,
+0,
+161,
+59,
+0,
+165,
+52,
+157,
+11,
+61,
+67,
+143,
+56,
+143,
+70,
+146,
+10,
+181,
+19,
+1,
+},
+{
+8,
+0,
+165,
+59,
+0,
+172,
+38,
+132,
+148,
+176,
+59,
+147,
+55,
+155,
+28,
+178,
+174,
+162,
+0,
+5,
+},
+{
+9,
+0,
+131,
+44,
+0,
+137,
+32,
+38,
+218,
+148,
+4,
+129,
+39,
+132,
+1,
+107,
+225,
+66,
+1,
+6,
+},
+{
+7,
+1,
+12,
+6,
+5,
+16,
+10,
+3,
+24,
+14,
+8,
+19,
+11,
+18,
+8,
+9,
+27,
+4,
+6,
+3,
+},
+{
+6,
+2,
+2,
+5,
+7,
+5,
+8,
+10,
+5,
+9,
+11,
+9,
+10,
+8,
+10,
+10,
+5,
+10,
+6,
+3,
+},
+{
+3,
+0,
+1,
+2,
+4,
+5,
+6,
+5,
+8,
+8,
+8,
+8,
+8,
+8,
+6,
+6,
+8,
+6,
+4,
+1,
+},
+{
+18,
+13,
+16,
+16,
+18,
+19,
+20,
+20,
+20,
+22,
+22,
+21,
+21,
+22,
+20,
+20,
+21,
+22,
+19,
+16,
+},
 };
+/*
+{
+    {0, 0, 0,2,  3,   3, 2,   0, 0, 0}, // x = 0 
+    {0, 0, 0,        0,   0,   0,          0,   0, 0, 0}, // x = 1
+    {0, 2, 0,        54,  177, 173,        54,  0, 2, 0}, // x = 2
+    {1, 1, 9,        215, 83,  91,         164, 0, 2, 0}, // x = 3
+    {2, 0, 42,       202, 0,   0,          0,   0, 0, 0}, // x = 4
+    {1, 1, 17,       221, 37,  52,         152, 0, 1, 0}, // x = 5
+    {0, 2, 0,        92,  194, 194,        91,  0, 2, 0}, // x = 6 
+    {0, 0, 1,        0,   8,   6,          0,   0, 0, 0}, // x = 7
+    {0, 0, 0,        3,   0,   0,          2,   0, 0, 0}, // x = 8
+    {0, 0, 0,        0,   1,   1,          0,   0, 0, 0 } // x = 9
+};
+*/
 
 //state variables for the process
 volatile uint8_t keep_moving = 0;    //a state to determine if there are steps remaining to move
@@ -199,12 +650,9 @@ static PT_THREAD (protothread_move(struct pt *pt))
     for (y_pos = 0; y_pos < Y_DIM; y_pos++) { // Look ahead needs shift by 1
       //toggle_RedLED();
       debug2 = y_pos;
-     // set_dc_state(&dc, 1);
+      set_dc_state(&dc, 1);
       z_pos = image[x_pos][y_pos] * STEP_Z;
-//      if (z_pos == 0) {set_RedLED(); clear_GreenLED();}
-//      if (z_pos == 8) {set_RedLED(); set_GreenLED();}
-//      if (z_pos == 16) {clear_RedLED(); set_GreenLED();}
-//      if (z_pos == 24) {clear_RedLED(); clear_GreenLED();}
+      debug3 = z_pos;
       move(&stp_3, z_pos);
       PT_YIELD_TIME_msec(2);
       // Setting up for the ISR to move the position
@@ -221,7 +669,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_2);
-      PT_YIELD_TIME_msec(2000);
+//      PT_YIELD_TIME_msec(2000);
     } 
       // DONE with y coordinate for a given x coordinate
       // Turn off the dc motor first to preserve integrity of piece
@@ -234,7 +682,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_3);
-      //set_dc_state(&dc, 0);
+      set_dc_state(&dc, 0);
       move(&stp_2, Y_START);
       // Setting up for the ISR to move the position
       keep_moving = 1;
@@ -248,7 +696,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
       // Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
       disable_stp(&stp_1);
-      PT_YIELD_TIME_msec(2000);
+   //   PT_YIELD_TIME_msec(2000);
   }
      
   // Turn off the dc motor 
@@ -309,7 +757,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
    
     // Align on the x axis last
     while(read_limit_x() == 0){
-      set_dir(&stp_1, 0);
+      set_dir(&stp_1, 0 );
       enable_stp(&stp_1);
       PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 50;
@@ -450,9 +898,15 @@ static PT_THREAD (protothread_tft(struct pt *pt))
             tft_writeString(buffer);
         }
         if (debug2 != -1) {
-            tft_setCursor(40, 70);
+            tft_setCursor(50, 70);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
             sprintf(buffer,"y %d", debug2);
+            tft_writeString(buffer);
+        }
+        if (debug3 != -1) {
+            tft_setCursor(100, 70);
+            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+            sprintf(buffer,"z %d", debug3);
             tft_writeString(buffer);
         }
         if (aligned) {
@@ -509,7 +963,7 @@ void main(void) {
  // init_tftLED();
   init_limit_switches();
   init_steppers(&stp_1, &stp_2, &stp_3);
-//  init_dc_motor(&dc);
+  init_dc_motor(&dc);
   load_start_cond();
   create_dummy_image();  
   // Schedule the threads

@@ -1,7 +1,6 @@
 #include "gpio.h"
 #include <plib.h>
 volatile uint8_t just_turned_on = 0;
-volatile int debug3 = 0;
 
 void init_limit_switches(void)
 {
@@ -23,9 +22,9 @@ void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3)
 {
   // Stepper 1 (X)
   //stp_1->DIR   = BIT_0;
-    stp_1->DIR = BIT_1;
-//  stp_1->STP   = BIT_1;
-    stp_1->STP   = BIT_10;
+  stp_1->DIR = BIT_1;
+  //stp_1->STP   = BIT_1;
+  stp_1->STP   = BIT_10;
   stp_1->SLEEP = BIT_0;
   stp_1->dir_move = 0;
   stp_1->stps_left = 0;
@@ -73,7 +72,8 @@ void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3)
 void init_dc_motor(dc_t* dc)
 {
   dc->on = 0;
-  dc->ENABLE = BIT_11;
+  //dc->ENABLE = BIT_11;
+  dc->ENABLE = BIT_15;
   mPORTBSetPinsDigitalOut(dc->ENABLE);
   mPORTBClearBits(dc->ENABLE);
 }
@@ -116,7 +116,6 @@ void toggle_stp(stepper_t* stp)
   switch(stp->stp_num) {
     case 1:
       mPORTBToggleBits(stp->STP);
-      debug3 = 1;
       break;
     case 2:
       mPORTBToggleBits(stp->STP);

@@ -58,7 +58,6 @@ extern volatile uint8_t z_enable;
 #define set_tftLED()   mPORTBSetBits(TFT_LED)
 #define clear_tftLED() mPORTBClearBits(TFT_LED)
 #define toggle_tftLED() mPORTBToggleBits(TFT_LED)
-volatile int debug3;
 
 void init_limit_switches(void);
 void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3);

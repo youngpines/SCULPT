@@ -56,12 +56,12 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 //    else if (stp_1.stps_left == 0) 
 //        clear_LED();
    //  Pulse until there's no steps left
-    if(turned_on && stp_1.stps_left > 0){
+    if(turned_on && stp_3.stps_left > 0){
     //if (stp_1.stps_left > 0){
-        mPORTBToggleBits(stp_1.STP);
-        stp_1.stps_left--;      
+        mPORTBToggleBits(stp_3.STP);
+        stp_3.stps_left--;      
     }
-    if (stp_1.stps_left == 0) keep_moving = 0;
+    if (stp_3.stps_left == 0) keep_moving = 0;
     // Clear the interrupt flag
     mT2ClearIntFlag();
 }
@@ -109,20 +109,20 @@ static PT_THREAD (protothread_move(struct pt *pt))
        // set_RedLED();
     }
     //clear_RedLED(); clear_GreenLED();
-    mPORTBClearBits(stp_1.DIR);
-    enable_x();
+    mPORTBClearBits(stp_3.DIR);
+    enable_z();
     PT_YIELD_TIME_msec(2);
-    while(read_limit_x() == 0) stp_1.stps_left = 50;
+    while(read_limit_z() == 0) stp_3.stps_left = 50;
     //set_RedLED();
-    disable_x();
-    stp_1.stps_left = NUM_STEPS_X;
-    mPORTBSetBits(stp_1.DIR);
-    enable_x();
+    disable_z();
+    stp_3.stps_left = NUM_STEPS_Z;
+    mPORTBSetBits(stp_3.DIR);
+    enable_z();
     PT_YIELD_TIME_msec(2);
     keep_moving = 1;
     //halting until the desired position is reached
     PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-    disable_x();
+    disable_z();
     
     while(1) {
         PT_YIELD(&pt_move);
