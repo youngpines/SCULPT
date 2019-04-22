@@ -66,7 +66,7 @@ char buffer[60];
 #define Y_LIMIT 15000
 #define Z_LIMIT 8000
 //#define X_START 0
-#define X_START 0
+#define X_START 0 
 #define Y_START 3500
 //#define Y_START 1500
 //#define Z_START 2500
