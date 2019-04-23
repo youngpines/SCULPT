@@ -28,6 +28,8 @@ extern volatile uint8_t y_enable;
 extern volatile uint8_t z_enable;
 
 /******************************* [ Macros ] ***********************************/
+#define absDiff(a, b) ((a)-(b) > 0 ? ((a)-(b)) : ((b)-(a)))
+
 // Enable Pulldowns
 #define EnablePullDownB(bits) \
   CNPUBCLR = bits;            \

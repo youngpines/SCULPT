@@ -7,7 +7,6 @@
 #define _SUPPRESS_PLIB_WARNING
 #endif
 //////////////////////////////////////
-#define TFT 10
 // graphics libraries
 #include "tft_master.h"
 #include "tft_gfx.h"
@@ -44,16 +43,9 @@ char buffer[60];
 
 /*********************** [ Constants ] ****************************************/
 // Image Size, max seems to be around 175 x 175
-#define X_DIM 20
-#define Y_DIM 20
-#define Z_DIM 20
-// was 400
+#define MAX_IMAGE_SIZE 100*100
 #define STEP_X 400
-//#define STEP_Y 585
-//#define STEP_Z 1000
-//#define STEP_X 1000
 #define STEP_Y 585
-// was 50
 #define STEP_Z 8
 #define SLEEP_TIME 2
 
@@ -65,17 +57,11 @@ char buffer[60];
 #define X_LIMIT 7000
 #define Y_LIMIT 15000
 #define Z_LIMIT 8000
-//#define X_START 0
 #define X_START 0 
 #define Y_START 3500
-//#define Y_START 1500
-//#define Z_START 2500
 #define Z_START 5000
-//#define Z_LIMIT 5000
-//#define Y_LIMIT 7850
-typedef unsigned char uint8_t;
-volatile int debug1 = -1; 
-volatile int debug2 = -1;
+int debug1 = -1; 
+int debug2 = -1;
 int debug3 = -1;
 int debug4 = 0;
 
@@ -88,462 +74,44 @@ static struct pt pt_input, pt_output, pt_DMA_output;
 static struct pt pt_tft;
 
 // Data array holding pixelated info of image
-static unsigned char image[X_DIM][Y_DIM] = {
+typedef struct {
+  char x;
+  char y;
+  char z;
+} image_t;
+static int image_size = 30;
+static image_t image[MAX_IMAGE_SIZE] = 
 {
-22,
-18,
-19,
-19,
-20,
-22,
-21,
-21,
-22,
-22,
-22,
-22,
-23,
-22,
-21,
-21,
-19,
-18,
-18,
-17,
-},
-{
-9,
-4,
-5,
-6,
-7,
-9,
-8,
-8,
-8,
-7,
-8,
-9,
-9,
-8,
-7,
-7,
-5,
-5,
-4,
-3,
-},
-{
-10,
-7,
-4,
-8,
-11,
-7,
-9,
-11,
-10,
-10,
-11,
-7,
-11,
-8,
-10,
-10,
-9,
-8,
-6,
-5,
-},
-{
-10,
-4,
-21,
-11,
-8,
-23,
-11,
-10,
-10,
-11,
-9,
-23,
-12,
-24,
-9,
-10,
-9,
-7,
-8,
-7,
-},
-{
-12,
-0,
-158,
-58,
-0,
-162,
-49,
-2,
-12,
-10,
-10,
-153,
-47,
-154,
-11,
-9,
-10,
-7,
-8,
-7,
-},
-{
-11,
-0,
-182,
-67,
-0,
-187,
-59,
-1,
-13,
-11,
-12,
-174,
-58,
-175,
-15,
-11,
-11,
-9,
-6,
-4,
-},
-{
-10,
-0,
-175,
-66,
-3,
-180,
-58,
-0,
-4,
-3,
-12,
-167,
-55,
-168,
-15,
-1,
-1,
-2,
-7,
-5,
-},
-{
-10,
-0,
-174,
-54,
-0,
-177,
-52,
-22,
-199,
-103,
-1,
-169,
-55,
-170,
-3,
-85,
-198,
-42,
-2,
-7,
-},
-{
-10,
-0,
-170,
-111,
-62,
-193,
-37,
-124,
-211,
-194,
-27,
-161,
-56,
-162,
-23,
-196,
-222,
-153,
-0,
-8,
-},
-{
-10,
-0,
-165,
-249,
-242,
-225,
-40,
-164,
-22,
-141,
-74,
-149,
-58,
-151,
-71,
-167,
-20,
-181,
-16,
-3,
-},
-{
-9,
-0,
-164,
-162,
-131,
-197,
-58,
-164,
-33,
-138,
-91,
-144,
-59,
-145,
-94,
-137,
-0,
-167,
-38,
-0,
-},
-{
-8,
-0,
-166,
-50,
-0,
-165,
-64,
-183,
-215,
-216,
-62,
-148,
-58,
-143,
-99,
-128,
-2,
-164,
-43,
-0,
-},
-{
-8,
-0,
-164,
-62,
-3,
-166,
-65,
-159,
-62,
-38,
-13,
-156,
-55,
-142,
-92,
-130,
-0,
-168,
-38,
-0,
-},
-{
-8,
-0,
-161,
-59,
-0,
-165,
-52,
-157,
-11,
-61,
-67,
-143,
-56,
-143,
-70,
-146,
-10,
-181,
-19,
-1,
-},
-{
-8,
-0,
-165,
-59,
-0,
-172,
-38,
-132,
-148,
-176,
-59,
-147,
-55,
-155,
-28,
-178,
-174,
-162,
-0,
-5,
-},
-{
-9,
-0,
-131,
-44,
-0,
-137,
-32,
-38,
-218,
-148,
-4,
-129,
-39,
-132,
-1,
-107,
-225,
-66,
-1,
-6,
-},
-{
-7,
-1,
-12,
-6,
-5,
-16,
-10,
-3,
-24,
-14,
-8,
-19,
-11,
-18,
-8,
-9,
-27,
-4,
-6,
-3,
-},
-{
-6,
-2,
-2,
-5,
-7,
-5,
-8,
-10,
-5,
-9,
-11,
-9,
-10,
-8,
-10,
-10,
-5,
-10,
-6,
-3,
-},
-{
-3,
-0,
-1,
-2,
-4,
-5,
-6,
-5,
-8,
-8,
-8,
-8,
-8,
-8,
-6,
-6,
-8,
-6,
-4,
-1,
-},
-{
-18,
-13,
-16,
-16,
-18,
-19,
-20,
-20,
-20,
-22,
-22,
-21,
-21,
-22,
-20,
-20,
-21,
-22,
-19,
-16,
-},
-};
-/*
-{
-    {0, 0, 0,2,  3,   3, 2,   0, 0, 0}, // x = 0 
-    {0, 0, 0,        0,   0,   0,          0,   0, 0, 0}, // x = 1
-    {0, 2, 0,        54,  177, 173,        54,  0, 2, 0}, // x = 2
-    {1, 1, 9,        215, 83,  91,         164, 0, 2, 0}, // x = 3
-    {2, 0, 42,       202, 0,   0,          0,   0, 0, 0}, // x = 4
-    {1, 1, 17,       221, 37,  52,         152, 0, 1, 0}, // x = 5
-    {0, 2, 0,        92,  194, 194,        91,  0, 2, 0}, // x = 6 
-    {0, 0, 1,        0,   8,   6,          0,   0, 0, 0}, // x = 7
-    {0, 0, 0,        3,   0,   0,          2,   0, 0, 0}, // x = 8
-    {0, 0, 0,        0,   1,   1,          0,   0, 0, 0 } // x = 9
-};
-*/
+{  1,   2, 132}, 
+{  3,   2, 128}, 
+{  2,   1, 109}, 
+{ 3,  1, 80}, 
+{ 2,  2, 55}, 
+{ 4,  2, 51}, 
+{ 3,  3, 48}, 
+{ 1,  3, 34}, 
+{ 1,  1, 33}, 
+{ 2,  3, 31}, 
+{4, 3, 6}, 
+{4, 1, 2}, 
+{2, 4, 1}, 
+{5, 4, 0}, 
+{5, 3, 0}, 
+{5, 2, 0}, 
+{5, 1, 0}, 
+{5, 0, 0}, 
+{4, 4, 0}, 
+{4, 0, 0}, 
+{3, 4, 0}, 
+{3, 0, 0}, 
+{2, 0, 0}, 
+{1, 4, 0}, 
+{1, 0, 0}, 
+{0, 4, 0}, 
+{0, 3, 0}, 
+{0, 2, 0}, 
+{0, 1, 0}, 
+{0, 0, 0}};
 
 //state variables for the process
 volatile uint8_t keep_moving = 0;    //a state to determine if there are steps remaining to move
@@ -635,10 +203,42 @@ static PT_THREAD (protothread_move(struct pt *pt))
   PT_YIELD_UNTIL(&pt_move, material_loaded == 1); 
   move_start = 1;
   //set_RedLED();
-  PT_YIELD_TIME_msec(500);
+  //PT_YIELD_TIME_msec(500);
   //clear_RedLED();
   //clear_GreenLED();
  
+  static int z_pos, i;
+  static image_t pixel;
+  for (i = 0; i < image_size; i++) {
+      // Get pixel information
+      pixel = image[i];
+      debug1 = pixel.x; debug2 = pixel.y; debug3 = pixel.z;
+      // Previous pixel is NOT next to the one to be drilled, raise z
+      if (i != 0 && 
+         (absDiff(image[i-1].x, pixel.x)+absDiff(image[i-1].y, pixel.y)) > 1) {
+        set_dc_state(&dc, 0); debug4 = 0;
+        z_pos = Z_START;
+        move(&stp_3, z_pos);
+        keep_moving = 1;
+        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+        disable_stp(&stp_3);
+      }
+      // Travel to (x, y) coordinate to drill
+      move(&stp_1, pixel.x*STEP_X);
+      move(&stp_2, pixel.y*STEP_Y);
+      keep_moving = 1;
+      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+      disable_stp(&stp_1);
+      disable_stp(&stp_2);
+      
+      // Lower to correct z position
+      set_dc_state(&dc, 1); debug4 = 1;
+      move(&stp_3, pixel.z*STEP_Z);
+      keep_moving = 1;
+      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+      disable_stp(&stp_3);
+  }
+  /*
   // x and y positions in the image array at start target positions at end of loops
   static int x_pos, y_pos, z_pos;
   // Loop through all entries in the image 
@@ -704,6 +304,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
   // Tell align & data thread image has been carved and need to realign
   image_carved = 1;
   load_start_cond();
+   * */
     
   // Once done working through the image array just yield forever
   PT_YIELD_UNTIL(&pt_move, image_carved == 0);          
@@ -824,8 +425,8 @@ static PT_THREAD (protothread_align(struct pt *pt))
 static PT_THREAD (protothread_serial(struct pt *pt))
 {
   PT_BEGIN(pt);
-  static char cmd[30];
-  static int value;
+  static char cmd[1];
+  static char x_val, y_val, z_val;
   static int count = 0;
   while(1) { 
      // set_GreenLED();
@@ -841,16 +442,20 @@ static PT_THREAD (protothread_serial(struct pt *pt))
     // returns when the thread dies
     // in this case, when <enter> is pushed
     // now parse the string
-    sscanf(PT_term_buffer, "%s %d", cmd, &value);
+    sscanf(PT_term_buffer, "%s %c %c %c", cmd, &x_val, &y_val, &z_val);
 
     switch(cmd[0]) {
+    case 's':
+      image_size = z_val;  
     case 'p': // Load pixel values into the pixel array
-      image[count%X_DIM][count/Y_DIM] = value;
+      image[count].x = x_val;
+      image[count].y = y_val;
+      image[count].z = z_val;
       count++;
       //toggle_RedLED();
       break;
     case 'e': // All data loaded, Terminate signal sent
-      if (count == X_DIM*Y_DIM) clear_GreenLED();
+      //if (count == image_size) clear_GreenLED();
       data_loaded = 1;
       PT_YIELD_UNTIL(&pt_serial, data_loaded == 0);
       break;
@@ -894,19 +499,7 @@ static PT_THREAD (protothread_tft(struct pt *pt))
         if (debug1 != -1) {
             tft_setCursor(0, 70);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"x %d", debug1);
-            tft_writeString(buffer);
-        }
-        if (debug2 != -1) {
-            tft_setCursor(50, 70);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"y %d", debug2);
-            tft_writeString(buffer);
-        }
-        if (debug3 != -1) {
-            tft_setCursor(100, 70);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"z %d", debug3);
+            sprintf(buffer,"x %d y %d z %d d %d", debug1, debug2, debug3, debug4);
             tft_writeString(buffer);
         }
         if (aligned) {
