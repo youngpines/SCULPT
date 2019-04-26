@@ -66,11 +66,6 @@ int debug1 = 1;
 int debug2 = 1;
 int debug3 = 1;
 int debug4 = 0;
-int debug5 = 0;
-int debug6 = 0;
-int debug7 = 0;
-int debug8 = 0; 
-int debug9 = 0;
 
 /**************** [ Global Variables ] ****************************************/
 static struct pt pt_serial, // thread to import data via UART
@@ -317,9 +312,9 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 // Sets steps for each axis and yiel3ds until the motion is complete
 // DC motor is turned on, or remains on, if the location is to be removed
 static int move_start = 0;
-static int debug10, debug11, debug12, debug13, debug14;
-static int debug15, debug16, debug17, debug18, debug19, debug20;
-static int debug21, debug22;
+static int debug10, debug11;
+static int debug12, debug13, debug14, debug15;
+static int debug16, debug17, debug18;
 //currently each change in x and y is 585 steps, z axis is a change of 2000
 static PT_THREAD (protothread_move(struct pt *pt))
 {
@@ -337,6 +332,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
   static int x_pos = 0; static int y_pos = 0; static int z_pos = 0;
   static int i;
   static int j;
+  static image_t last_pixel;
   static image_t pixel;
   uint8_t z_start = image[0].z;
 //  // Move Z to start position
@@ -346,166 +342,48 @@ static PT_THREAD (protothread_move(struct pt *pt))
 //  disable_stp(&stp_3);
 
   // Find highest position in image and start there
-  for (i = 0; i < z_start+1; i=i+5) {
-      debug10 = i; debug12 = z_start;
-    //  PT_YIELD_TIME_msec(1000);
+  for (i = 0; i < z_start+1; i++) {
+      debug10 = i;
     for (j = 0; j < image_size; j++) {
-        
         debug11 = j;
-     //   PT_YIELD_TIME_msec(2000);
-      debug7 = image_size;
+      // Check if z position should be cut
       pixel = image[j];
-      if (pixel.z < i && pixel.z < z_start) {
-          image_size--;
-          break;
-      } 
-      // Now, cut
-      debug15 = image[j-1].x;
-      debug16 = pixel.x;
-      debug17 = absDiff(image[j-1].x, pixel.x);
-      debug18 = image[j-1].y;
-      debug19 = pixel.y;
-      debug20 = absDiff(image[j-1].y, pixel.y);
-      debug21 = (absDiff(image[j-1].x, pixel.x)+absDiff(image[j-1].y, pixel.y)) > 1;
-      debug22 = (j != 0 && 
-         (absDiff(image[j-1].x, pixel.x)+absDiff(image[j-1].y, pixel.y)) > 1);
-      if (j != 0 && 
-         (absDiff(image[j-1].x, pixel.x)+absDiff(image[j-1].y, pixel.y)) > 1) {
-          debug13++;
-        set_dc_state(&dc, 0); debug4 = 0;
-//        z_pos = (z_start+50)*STEP_Z;
+      debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
+      if (i == 0 && j == 0) last_pixel = pixel;
+      if (pixel.z < i) break;
+      if ((absDiff(last_pixel.x, pixel.x)+absDiff(last_pixel.y, pixel.y)) > 1) {
+          debug15++;
+        set_dc_state(&dc, 0);
         z_pos = Z_START;
         move(&stp_3, z_pos);
         keep_moving = 1;
         PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
         disable_stp(&stp_3);
       }
-  
-      // Travel to (x, y) coordinate to drill
-      x_pos = pixel.x*STEP_X; debug1 = pixel.x;
+      // Now, cut x & y 
+      x_pos = pixel.x*STEP_X;
       move(&stp_1, x_pos);
-      keep_moving = 1;
+      keep_moving = 0;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_1);
-      y_pos = pixel.y*STEP_Y + Y_START; debug2 = pixel.y;
+      y_pos = pixel.y*STEP_Y;
       move(&stp_2, y_pos);
-      keep_moving = 1;
+      keep_moving = 0;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_2);
       
-      set_dc_state(&dc, 1); debug4 = 1;
-              debug12 = z_start;
+      set_dc_state(&dc, 1);
       z_pos = (z_start-i)*STEP_Z;
-      debug14 = z_pos;
       move(&stp_3, z_pos);
-      keep_moving = 1;
+      keep_moving = 0;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_3);
-      debug3 = pixel.z;
+      
+      // Update the pixels
+      last_pixel = pixel;
+      debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
     }
   }
-  set_dc_state(&dc, 0);
-
-  // Carve through a layer going through all x, y, and z's
-  // Update the current position
-  /*
-   * debug6 = i;
-      // Get pixel information
-      pixel = image[i];
-      debug1 = pixel.x; debug2 = pixel.y; debug3 = image[i].z;
-      // Previous pixel is NOT next to the one to be drilled, raise z
-      if (i != 0 && 
-         (absDiff(image[i-1].x, pixel.x)+absDiff(image[i-1].y, pixel.y)) > 1) {
-        set_dc_state(&dc, 0); debug4 = 0;
-        z_pos = Z_START;
-        move(&stp_3, z_pos);
-        keep_moving = 1;
-        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-        disable_stp(&stp_3);
-      }
-      // Travel to (x, y) coordinate to drill
-      x_pos = pixel.x*STEP_X; 
-      y_pos = pixel.y*STEP_Y;
-      move(&stp_1, x_pos);
-      move(&stp_2, y_pos);
-      keep_moving = 1;
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-      disable_stp(&stp_1);
-      disable_stp(&stp_2);
-      
-      // Lower to correct z position
-      set_dc_state(&dc, 1); debug4 = 1;
-      z_pos = pixel.z*STEP_Z;
-      move(&stp_3, z_pos);
-      keep_moving = 1;
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-      disable_stp(&stp_3);
-  // x and y positions in the image array at start target positions at end of loops
-  static int x_pos, y_pos, z_pos;
-  // Loop through all entries in the image 
-  debug1 = 0; debug2 = 0; PT_YIELD(&pt_move);
-  for (x_pos = 0; x_pos < X_DIM; x_pos++) { // x coordinates iterated slowly    
-    // Looks at the next y coordinate for the current x and determines
-    // if the drill needs to be raised or lowered for that entry
-      debug1 = x_pos;
-    for (y_pos = 0; y_pos < Y_DIM; y_pos++) { // Look ahead needs shift by 1
-      //toggle_RedLED();
-      debug2 = y_pos;
-      set_dc_state(&dc, 1);
-      z_pos = image[x_pos][y_pos] * STEP_Z;
-      debug3 = z_pos;
-      move(&stp_3, z_pos);
-      PT_YIELD_TIME_msec(2);
-      // Setting up for the ISR to move the position
-      keep_moving = 1;
-      // Halting until the desired position is reached
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-      disable_stp(&stp_3);
-      // Setting the steps to move in y
-      int y_pos = stp_2.pos;
-      move(&stp_2, y_pos + STEP_Y);
-      PT_YIELD_TIME_msec(SLEEP_TIME);
-      // Setting up for the ISR to move the position
-      keep_moving = 1;
-      // Halting until the desired position is reached
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-      disable_stp(&stp_2);
-//      PT_YIELD_TIME_msec(2000);
-    } 
-      // DONE with y coordinate for a given x coordinate
-      // Turn off the dc motor first to preserve integrity of piece
-      //toggle_GreenLED();
-      // Check if z is raised or not, if not raise it
-      move(&stp_3, Z_START);
-      PT_YIELD_TIME_msec(SLEEP_TIME);
-      // Setting up for the ISR to move the position
-      keep_moving = 1;
-      // Halting until the desired position is reached
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-      disable_stp(&stp_3);
-      set_dc_state(&dc, 0);
-      move(&stp_2, Y_START);
-      // Setting up for the ISR to move the position
-      keep_moving = 1;
-      // Halting until the desired position is reached
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-      disable_stp(&stp_2);
-      int x_pos = stp_1.pos;
-      move(&stp_1, x_pos + STEP_X);
-      // Setting up for the ISR to move the position
-      keep_moving = 1;
-      // Halting until the desired position is reached
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0); 
-      disable_stp(&stp_1);
-   //   PT_YIELD_TIME_msec(2000);
-  }
-     
-  // Turn off the dc motor 
-  //set_dc_state(&dc, 0);
-  // Tell align & data thread image has been carved and need to realign
-  image_carved = 1;
-  load_start_cond();
-   * */
     
   // Once done working through the image array just yield forever
   PT_YIELD_UNTIL(&pt_move, image_carved == 0); 
@@ -615,7 +493,6 @@ static PT_THREAD (protothread_align(struct pt *pt))
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
       disable_stp(&stp_1);
       start = 1;
-      debug5 = image[0].z;
     }
     // After finishing the alignment yield until alignment is needed again
     material_loaded = 1;
@@ -686,7 +563,6 @@ static PT_THREAD (protothread_tft(struct pt *pt))
         tft_fillRoundRect(0, 50, 320, 200, 1, ILI9340_BLACK);// x,y,w,h,radius,color
         tft_setCursor(0, 10);
         tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-//        sprintf(buffer,"%d", debug_3);
         tft_writeString(buffer);
 
         if (debug3) {
@@ -710,11 +586,11 @@ static PT_THREAD (protothread_tft(struct pt *pt))
         if (aligned) {
             tft_setCursor(0, 50);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"moved, r %d tgtz %d", debug13, debug14);
+            sprintf(buffer,"moved res %d", debug15);
             tft_writeString(buffer);
             tft_setCursor(0, 90);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"cur %d i %d j %d p %d", debug7, debug10, debug11, debug12);
+            sprintf(buffer,"i %d j %d", debug10, debug11);
             tft_writeString(buffer);
             tft_setCursor(0, 110);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
@@ -730,11 +606,11 @@ static PT_THREAD (protothread_tft(struct pt *pt))
             tft_writeString(buffer);
             tft_setCursor(0, 170);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"ix %d px %d calx %d r1 %d r2 %d", debug15, debug16, debug17, debug21, debug22);
+            sprintf(buffer,"pix x %d y %d z %d", debug12, debug13, debug14);
             tft_writeString(buffer);
             tft_setCursor(0,190);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"iy %d py %d caly %d", debug18, debug19, debug20);
+            sprintf(buffer,"last x %d y %d z %d", debug16, debug17, debug18);
             tft_writeString(buffer);
         }
         // NEVER exit while
