@@ -45,8 +45,10 @@ char buffer[60];
 // Image Size, max seems to be around 175 x 175
 #define MAX_IMAGE_SIZE 100*100
 #define STEP_X 400
-#define STEP_Y 585
-#define STEP_Z 8
+//585
+#define STEP_Y 500
+//8
+#define STEP_Z 10
 #define SLEEP_TIME 2
 
 // Stepping Frequency of X & Y, every 1 msec
@@ -58,12 +60,17 @@ char buffer[60];
 #define Y_LIMIT 15000
 #define Z_LIMIT 8000
 #define X_START 0 
-#define Y_START 3500
+#define Y_START 5000
 #define Z_START 5000
-int debug1 = -1; 
-int debug2 = -1;
-int debug3 = -1;
+int debug1 = 1; 
+int debug2 = 1;
+int debug3 = 1;
 int debug4 = 0;
+int debug5 = 0;
+int debug6 = 0;
+int debug7 = 0;
+int debug8 = 0; 
+int debug9 = 0;
 
 /**************** [ Global Variables ] ****************************************/
 static struct pt pt_serial, // thread to import data via UART
@@ -74,44 +81,160 @@ static struct pt pt_input, pt_output, pt_DMA_output;
 static struct pt pt_tft;
 
 // Data array holding pixelated info of image
+typedef unsigned char uint8_t;
 typedef struct {
-  char x;
-  char y;
-  char z;
+  uint8_t x;
+  uint8_t y;
+  uint8_t z;
 } image_t;
-static int image_size = 30;
-static image_t image[MAX_IMAGE_SIZE] = 
+int image_size = 100;
+image_t image[MAX_IMAGE_SIZE] = 
 {
-{  1,   2, 132}, 
-{  3,   2, 128}, 
-{  2,   1, 109}, 
-{ 3,  1, 80}, 
-{ 2,  2, 55}, 
-{ 4,  2, 51}, 
-{ 3,  3, 48}, 
-{ 1,  3, 34}, 
-{ 1,  1, 33}, 
-{ 2,  3, 31}, 
-{4, 3, 6}, 
-{4, 1, 2}, 
-{2, 4, 1}, 
-{5, 4, 0}, 
-{5, 3, 0}, 
-{5, 2, 0}, 
-{5, 1, 0}, 
-{5, 0, 0}, 
-{4, 4, 0}, 
-{4, 0, 0}, 
-{3, 4, 0}, 
-{3, 0, 0}, 
-{2, 0, 0}, 
-{1, 4, 0}, 
-{1, 0, 0}, 
-{0, 4, 0}, 
-{0, 3, 0}, 
-{0, 2, 0}, 
-{0, 1, 0}, 
-{0, 0, 0}};
+{  0,   0, 221}, 
+{  0,   1, 221}, 
+{  0,   2, 221}, 
+{  0,   7, 221}, 
+{  0,   8, 221}, 
+{  0,   9, 221}, 
+{  1,   0, 221}, 
+{  1,   1, 221}, 
+{  1,   2, 221}, 
+{  1,   3, 221}, 
+{  1,   4, 221}, 
+{  1,   5, 221}, 
+{  1,   6, 221}, 
+{  1,   7, 221}, 
+{  1,   8, 221}, 
+{  1,   9, 221}, 
+{  2,   0, 221}, 
+{  2,   2, 221}, 
+{  2,   7, 221}, 
+{  2,   9, 221}, 
+{  3,   7, 221}, 
+{  3,   9, 221}, 
+{  4,   1, 221}, 
+{  4,   4, 221}, 
+{  4,   5, 221}, 
+{  4,   6, 221}, 
+{  4,   7, 221}, 
+{  4,   8, 221}, 
+{  4,   9, 221}, 
+{  5,   7, 221}, 
+{  5,   9, 221}, 
+{  6,   0, 221}, 
+{  6,   2, 221}, 
+{  6,   7, 221}, 
+{  6,   9, 221}, 
+{  7,   0, 221}, 
+{  7,   1, 221}, 
+{  7,   3, 221}, 
+{  7,   6, 221}, 
+{  7,   7, 221}, 
+{  7,   8, 221}, 
+{  7,   9, 221}, 
+{  8,   0, 221}, 
+{  8,   1, 221}, 
+{  8,   2, 221}, 
+{  8,   4, 221}, 
+{  8,   5, 221}, 
+{  8,   7, 221}, 
+{  8,   8, 221}, 
+{  8,   9, 221}, 
+{  9,   0, 221}, 
+{  9,   1, 221}, 
+{  9,   2, 221}, 
+{  9,   3, 221}, 
+{  9,   6, 221}, 
+{  9,   7, 221}, 
+{  9,   8, 221}, 
+{  9,   9, 221}, 
+{  3,   0, 220}, 
+{  3,   1, 220}, 
+{  5,   0, 220}, 
+{  5,   1, 220}, 
+{  5,   8, 220}, 
+{  7,   2, 220}, 
+{  9,   4, 220}, 
+{  9,   5, 220}, 
+{  0,   3, 219}, 
+{  0,   6, 219}, 
+{  2,   1, 219}, 
+{  2,   8, 219}, 
+{  3,   8, 219}, 
+{  4,   0, 219}, 
+{  6,   1, 219}, 
+{  6,   8, 219}, 
+{  8,   6, 219}, 
+{  0,   4, 218}, 
+{  0,   5, 218}, 
+{  8,   3, 218}, 
+{  7,   5, 215}, 
+{  7,   4, 213}, 
+{  3,   2, 212}, 
+{  5,   2, 204}, 
+{  5,   4, 184}, 
+{  4,   2, 179}, 
+{  5,   5, 169}, 
+{  2,   3, 167}, 
+{  2,   6, 167}, 
+{  3,   4, 138}, 
+{  3,   5, 130}, 
+{  6,   6, 130}, 
+{  6,   3, 129}, 
+{ 5,  6, 69}, 
+{ 3,  6, 57}, 
+{ 2,  5, 48}, 
+{ 2,  4, 44}, 
+{ 6,  4, 27}, 
+{ 6,  5, 27}, 
+{ 4,  3, 19}, 
+{3, 3, 6}, 
+{5, 3, 0}};
+
+/*
+{{  0,   0, 13}, 
+{  0,   1, 13}, 
+{  0,   2, 13}, 
+{  0,   3, 13}, 
+{  0,   4, 13}, 
+{ 1,  1, 10}, 
+{ 1,  3, 9}, 
+{ 3,  3, 9}, 
+{ 4,  2, 5}, 
+{1, 2, 0}}; */
+/*
+{{  0,   0, 132}, 
+{  0,   1, 132}, 
+{  0,   2, 132}, 
+{  0,   3, 132}, 
+{  0,   4, 132}, 
+{  1,   0, 132}, 
+{  1,   4, 132}, 
+{  2,   0, 132}, 
+{  3,   0, 132}, 
+{  3,   4, 132}, 
+{  4,   0, 132}, 
+{  4,   4, 132}, 
+{  5,   0, 132}, 
+{  5,   1, 132}, 
+{  5,   2, 132}, 
+{  5,   3, 132}, 
+{  5,   4, 132}, 
+{  2,   4, 131}, 
+{  4,   1, 130}, 
+{  4,   3, 126}, 
+{  2,   3, 101}, 
+{ 1,  1, 99}, 
+{ 1,  3, 98}, 
+{ 3,  3, 84}, 
+{ 4,  2, 81}, 
+{ 2,  2, 77}, 
+{ 3,  1, 52}, 
+{ 2,  1, 23}, 
+{3, 2, 4}, 
+{1, 2, 0}};
+
+*/
 
 //state variables for the process
 volatile uint8_t keep_moving = 0;    //a state to determine if there are steps remaining to move
@@ -194,10 +317,14 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 // Sets steps for each axis and yiel3ds until the motion is complete
 // DC motor is turned on, or remains on, if the location is to be removed
 static int move_start = 0;
+static int debug10, debug11, debug12, debug13, debug14;
+static int debug15, debug16, debug17, debug18, debug19, debug20;
+static int debug21, debug22;
 //currently each change in x and y is 585 steps, z axis is a change of 2000
 static PT_THREAD (protothread_move(struct pt *pt))
 {
   PT_BEGIN(pt);
+  while(1) {
   // Wait until the board aligned, material loaded, & the data loaded
   PT_YIELD_UNTIL(&pt_move, data_loaded == 1);
   PT_YIELD_UNTIL(&pt_move, material_loaded == 1); 
@@ -207,12 +334,85 @@ static PT_THREAD (protothread_move(struct pt *pt))
   //clear_RedLED();
   //clear_GreenLED();
  
-  static int z_pos, i;
+  static int x_pos = 0; static int y_pos = 0; static int z_pos = 0;
+  static int i;
+  static int j;
   static image_t pixel;
-  for (i = 0; i < image_size; i++) {
+  uint8_t z_start = image[0].z;
+//  // Move Z to start position
+//  move(&stp_3, Z_START);
+//  keep_moving = 1;
+//  PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+//  disable_stp(&stp_3);
+
+  // Find highest position in image and start there
+  for (i = 0; i < z_start+1; i=i+5) {
+      debug10 = i; debug12 = z_start;
+    //  PT_YIELD_TIME_msec(1000);
+    for (j = 0; j < image_size; j++) {
+        
+        debug11 = j;
+     //   PT_YIELD_TIME_msec(2000);
+      debug7 = image_size;
+      pixel = image[j];
+      if (pixel.z < i && pixel.z < z_start) {
+          image_size--;
+          break;
+      } 
+      // Now, cut
+      debug15 = image[j-1].x;
+      debug16 = pixel.x;
+      debug17 = absDiff(image[j-1].x, pixel.x);
+      debug18 = image[j-1].y;
+      debug19 = pixel.y;
+      debug20 = absDiff(image[j-1].y, pixel.y);
+      debug21 = (absDiff(image[j-1].x, pixel.x)+absDiff(image[j-1].y, pixel.y)) > 1;
+      debug22 = (j != 0 && 
+         (absDiff(image[j-1].x, pixel.x)+absDiff(image[j-1].y, pixel.y)) > 1);
+      if (j != 0 && 
+         (absDiff(image[j-1].x, pixel.x)+absDiff(image[j-1].y, pixel.y)) > 1) {
+          debug13++;
+        set_dc_state(&dc, 0); debug4 = 0;
+//        z_pos = (z_start+50)*STEP_Z;
+        z_pos = Z_START;
+        move(&stp_3, z_pos);
+        keep_moving = 1;
+        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+        disable_stp(&stp_3);
+      }
+  
+      // Travel to (x, y) coordinate to drill
+      x_pos = pixel.x*STEP_X; debug1 = pixel.x;
+      move(&stp_1, x_pos);
+      keep_moving = 1;
+      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+      disable_stp(&stp_1);
+      y_pos = pixel.y*STEP_Y + Y_START; debug2 = pixel.y;
+      move(&stp_2, y_pos);
+      keep_moving = 1;
+      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+      disable_stp(&stp_2);
+      
+      set_dc_state(&dc, 1); debug4 = 1;
+              debug12 = z_start;
+      z_pos = (z_start-i)*STEP_Z;
+      debug14 = z_pos;
+      move(&stp_3, z_pos);
+      keep_moving = 1;
+      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+      disable_stp(&stp_3);
+      debug3 = pixel.z;
+    }
+  }
+  set_dc_state(&dc, 0);
+
+  // Carve through a layer going through all x, y, and z's
+  // Update the current position
+  /*
+   * debug6 = i;
       // Get pixel information
       pixel = image[i];
-      debug1 = pixel.x; debug2 = pixel.y; debug3 = pixel.z;
+      debug1 = pixel.x; debug2 = pixel.y; debug3 = image[i].z;
       // Previous pixel is NOT next to the one to be drilled, raise z
       if (i != 0 && 
          (absDiff(image[i-1].x, pixel.x)+absDiff(image[i-1].y, pixel.y)) > 1) {
@@ -224,8 +424,10 @@ static PT_THREAD (protothread_move(struct pt *pt))
         disable_stp(&stp_3);
       }
       // Travel to (x, y) coordinate to drill
-      move(&stp_1, pixel.x*STEP_X);
-      move(&stp_2, pixel.y*STEP_Y);
+      x_pos = pixel.x*STEP_X; 
+      y_pos = pixel.y*STEP_Y;
+      move(&stp_1, x_pos);
+      move(&stp_2, y_pos);
       keep_moving = 1;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_1);
@@ -233,12 +435,11 @@ static PT_THREAD (protothread_move(struct pt *pt))
       
       // Lower to correct z position
       set_dc_state(&dc, 1); debug4 = 1;
-      move(&stp_3, pixel.z*STEP_Z);
+      z_pos = pixel.z*STEP_Z;
+      move(&stp_3, z_pos);
       keep_moving = 1;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_3);
-  }
-  /*
   // x and y positions in the image array at start target positions at end of loops
   static int x_pos, y_pos, z_pos;
   // Loop through all entries in the image 
@@ -307,7 +508,10 @@ static PT_THREAD (protothread_move(struct pt *pt))
    * */
     
   // Once done working through the image array just yield forever
-  PT_YIELD_UNTIL(&pt_move, image_carved == 0);          
+  PT_YIELD_UNTIL(&pt_move, image_carved == 0); 
+  //load_start_cond();
+  while(1) PT_YIELD(&pt_move);
+  }
   PT_END(pt);
 }
 
@@ -411,6 +615,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
       disable_stp(&stp_1);
       start = 1;
+      debug5 = image[0].z;
     }
     // After finishing the alignment yield until alignment is needed again
     material_loaded = 1;
@@ -426,7 +631,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
 {
   PT_BEGIN(pt);
   static char cmd[1];
-  static char x_val, y_val, z_val;
+  static uint8_t x_val, y_val, z_val;
   static int count = 0;
   while(1) { 
      // set_GreenLED();
@@ -478,7 +683,7 @@ static PT_THREAD (protothread_tft(struct pt *pt))
         // yield time 1 second
         PT_YIELD_TIME_msec(1000) ;
         // draw sys_time
-        tft_fillRoundRect(0, 70, 300, 80, 1, ILI9340_BLACK);// x,y,w,h,radius,color
+        tft_fillRoundRect(0, 50, 320, 200, 1, ILI9340_BLACK);// x,y,w,h,radius,color
         tft_setCursor(0, 10);
         tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
 //        sprintf(buffer,"%d", debug_3);
@@ -496,28 +701,40 @@ static PT_THREAD (protothread_tft(struct pt *pt))
             sprintf(buffer,"aligned");
             tft_writeString(buffer);
         }
-        if (debug1 != -1) {
+        if (debug3 != 1) {
             tft_setCursor(0, 70);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"x %d y %d z %d d %d", debug1, debug2, debug3, debug4);
+            sprintf(buffer,"x %u y %u z %u d %c", debug1, debug2, debug3, debug4);
             tft_writeString(buffer);
         }
         if (aligned) {
             tft_setCursor(0, 50);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"moved");
+            sprintf(buffer,"moved, r %d tgtz %d", debug13, debug14);
             tft_writeString(buffer);
             tft_setCursor(0, 90);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"x: pos %d, s %d, d %d", stp_1.pos, stp_1.stps_left, stp_1.dir_move);
+            sprintf(buffer,"cur %d i %d j %d p %d", debug7, debug10, debug11, debug12);
             tft_writeString(buffer);
             tft_setCursor(0, 110);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"y: pos %d, s %d, d %d", stp_2.pos, stp_2.stps_left, stp_2.dir_move);
+            sprintf(buffer,"x: pos %d, s %d, d %d", stp_1.pos, stp_1.stps_left, stp_1.dir_move);
             tft_writeString(buffer);
             tft_setCursor(0, 130);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+            sprintf(buffer,"y: pos %d, s %d, d %d", stp_2.pos, stp_2.stps_left, stp_2.dir_move);
+            tft_writeString(buffer);
+            tft_setCursor(0, 150);
+            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
             sprintf(buffer,"z: pos %d, s %d, d %d", stp_3.pos, stp_3.stps_left, stp_3.dir_move);
+            tft_writeString(buffer);
+            tft_setCursor(0, 170);
+            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+            sprintf(buffer,"ix %d px %d calx %d r1 %d r2 %d", debug15, debug16, debug17, debug21, debug22);
+            tft_writeString(buffer);
+            tft_setCursor(0,190);
+            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+            sprintf(buffer,"iy %d py %d caly %d", debug18, debug19, debug20);
             tft_writeString(buffer);
         }
         // NEVER exit while

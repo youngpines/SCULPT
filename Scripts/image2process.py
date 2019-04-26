@@ -17,16 +17,16 @@ import serial, time
 im = Image.open('/home/ho-jung/Desktop/Junior/SCULPT/TestImages/black_c.jpg')
 
 #displaying the target image for checking function
-#im.show()
+im.show()
 
 #converting the image to greyscale and resizing
 grey = im.convert('L')
 # size = 248, 128
-size = 5, 6
+size = 10, 10
 grey = grey.resize(size,Image.LANCZOS)
 
 #displaying the final to ensure it worked well
-#grey.show()
+grey.show()
 
 #format is [width][height]
 pixels = np.asarray(grey, dtype=np.uint8)
@@ -38,9 +38,13 @@ print("[ %s ] dimension of array" % str(pixels.shape))
 pixFlat = pixels.ravel()
 pixSorted = np.dstack(np.unravel_index(np.argsort(pixFlat, kind="stable"),
     pixels.shape))
-pixSorted = pixSorted.reshape(30, 2)
+pixSorted = pixSorted.reshape(size[0]*size[1], 2)
 pixVals = np.sort(pixFlat)
-imageData = np.column_stack((pixSorted[::-1], pixVals[::-1]))
+lastVal = pixVals[-1]
+scalar = lastVal
+pixVals = np.subtract(np.repeat(scalar, pixVals.size), pixVals)
+imageData = np.column_stack((pixSorted, pixVals))
+
 
 print("before")
 #print(pixels)
@@ -48,6 +52,8 @@ print("size")
 print(imageData.shape)
 print("imagedata")
 print(imageData)
+print("last val")
+print(lastVal)
 
 #Reprinting to make copy/paste friendly
 happy = str(list(imageData)).replace("array(","").replace(")", "").replace('[',
