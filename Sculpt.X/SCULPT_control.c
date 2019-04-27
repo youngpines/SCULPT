@@ -577,6 +577,12 @@ static PT_THREAD (protothread_tft(struct pt *pt))
             sprintf(buffer,"aligned");
             tft_writeString(buffer);
         }
+        if (move_start) {
+            tft_setCursor(60, 30);
+            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+            sprintf(buffer,"moved");
+            tft_writeString(buffer);
+        }
         if (debug3 != 1) {
             tft_setCursor(0, 70);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
