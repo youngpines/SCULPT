@@ -88,6 +88,10 @@ image_t image[MAX_IMAGE_SIZE] =
 {  0,   0, 221}, 
 {  0,   1, 221}, 
 {  0,   2, 221}, 
+{  0,   3, 219}, 
+{  0,   4, 218}, 
+{  0,   5, 218}, 
+{  0,   6, 219}, 
 {  0,   7, 221}, 
 {  0,   8, 221}, 
 {  0,   9, 221}, 
@@ -102,27 +106,61 @@ image_t image[MAX_IMAGE_SIZE] =
 {  1,   8, 221}, 
 {  1,   9, 221}, 
 {  2,   0, 221}, 
+{  2,   1, 219}, 
 {  2,   2, 221}, 
+{  2,   3, 167}, 
+{ 2,  4, 44}, 
+{ 2,  5, 48}, 
+{  2,   6, 167}, 
 {  2,   7, 221}, 
+{  2,   8, 219}, 
 {  2,   9, 221}, 
+{  3,   0, 220}, 
+{  3,   1, 220}, 
+{  3,   2, 212}, 
+{3, 3, 6}, 
+{  3,   4, 138}, 
+{  3,   5, 130}, 
+{ 3,  6, 57}, 
 {  3,   7, 221}, 
+{  3,   8, 219}, 
 {  3,   9, 221}, 
+{  4,   0, 219}, 
 {  4,   1, 221}, 
+{  4,   2, 179}, 
+{ 4,  3, 19}, 
 {  4,   4, 221}, 
 {  4,   5, 221}, 
 {  4,   6, 221}, 
 {  4,   7, 221}, 
 {  4,   8, 221}, 
 {  4,   9, 221}, 
+{  5,   0, 220}, 
+{  5,   1, 220}, 
+{  5,   2, 204}, 
+{5, 3, 0}, 
+{  5,   4, 184}, 
+{  5,   5, 169}, 
+{ 5,  6, 69}, 
 {  5,   7, 221}, 
+{  5,   8, 220}, 
 {  5,   9, 221}, 
 {  6,   0, 221}, 
+{  6,   1, 219}, 
 {  6,   2, 221}, 
+{  6,   3, 129}, 
+{ 6,  4, 27}, 
+{ 6,  5, 27}, 
+{  6,   6, 130}, 
 {  6,   7, 221}, 
+{  6,   8, 219}, 
 {  6,   9, 221}, 
 {  7,   0, 221}, 
 {  7,   1, 221}, 
+{  7,   2, 220}, 
 {  7,   3, 221}, 
+{  7,   4, 213}, 
+{  7,   5, 215}, 
 {  7,   6, 221}, 
 {  7,   7, 221}, 
 {  7,   8, 221}, 
@@ -130,8 +168,10 @@ image_t image[MAX_IMAGE_SIZE] =
 {  8,   0, 221}, 
 {  8,   1, 221}, 
 {  8,   2, 221}, 
+{  8,   3, 218}, 
 {  8,   4, 221}, 
 {  8,   5, 221}, 
+{  8,   6, 219}, 
 {  8,   7, 221}, 
 {  8,   8, 221}, 
 {  8,   9, 221}, 
@@ -139,97 +179,12 @@ image_t image[MAX_IMAGE_SIZE] =
 {  9,   1, 221}, 
 {  9,   2, 221}, 
 {  9,   3, 221}, 
+{  9,   4, 220}, 
+{  9,   5, 220}, 
 {  9,   6, 221}, 
 {  9,   7, 221}, 
 {  9,   8, 221}, 
-{  9,   9, 221}, 
-{  3,   0, 220}, 
-{  3,   1, 220}, 
-{  5,   0, 220}, 
-{  5,   1, 220}, 
-{  5,   8, 220}, 
-{  7,   2, 220}, 
-{  9,   4, 220}, 
-{  9,   5, 220}, 
-{  0,   3, 219}, 
-{  0,   6, 219}, 
-{  2,   1, 219}, 
-{  2,   8, 219}, 
-{  3,   8, 219}, 
-{  4,   0, 219}, 
-{  6,   1, 219}, 
-{  6,   8, 219}, 
-{  8,   6, 219}, 
-{  0,   4, 218}, 
-{  0,   5, 218}, 
-{  8,   3, 218}, 
-{  7,   5, 215}, 
-{  7,   4, 213}, 
-{  3,   2, 212}, 
-{  5,   2, 204}, 
-{  5,   4, 184}, 
-{  4,   2, 179}, 
-{  5,   5, 169}, 
-{  2,   3, 167}, 
-{  2,   6, 167}, 
-{  3,   4, 138}, 
-{  3,   5, 130}, 
-{  6,   6, 130}, 
-{  6,   3, 129}, 
-{ 5,  6, 69}, 
-{ 3,  6, 57}, 
-{ 2,  5, 48}, 
-{ 2,  4, 44}, 
-{ 6,  4, 27}, 
-{ 6,  5, 27}, 
-{ 4,  3, 19}, 
-{3, 3, 6}, 
-{5, 3, 0}};
-
-/*
-{{  0,   0, 13}, 
-{  0,   1, 13}, 
-{  0,   2, 13}, 
-{  0,   3, 13}, 
-{  0,   4, 13}, 
-{ 1,  1, 10}, 
-{ 1,  3, 9}, 
-{ 3,  3, 9}, 
-{ 4,  2, 5}, 
-{1, 2, 0}}; */
-/*
-{{  0,   0, 132}, 
-{  0,   1, 132}, 
-{  0,   2, 132}, 
-{  0,   3, 132}, 
-{  0,   4, 132}, 
-{  1,   0, 132}, 
-{  1,   4, 132}, 
-{  2,   0, 132}, 
-{  3,   0, 132}, 
-{  3,   4, 132}, 
-{  4,   0, 132}, 
-{  4,   4, 132}, 
-{  5,   0, 132}, 
-{  5,   1, 132}, 
-{  5,   2, 132}, 
-{  5,   3, 132}, 
-{  5,   4, 132}, 
-{  2,   4, 131}, 
-{  4,   1, 130}, 
-{  4,   3, 126}, 
-{  2,   3, 101}, 
-{ 1,  1, 99}, 
-{ 1,  3, 98}, 
-{ 3,  3, 84}, 
-{ 4,  2, 81}, 
-{ 2,  2, 77}, 
-{ 3,  1, 52}, 
-{ 2,  1, 23}, 
-{3, 2, 4}, 
-{1, 2, 0}};
-
-*/
+{  9,   9, 221}};
 
 //state variables for the process
 volatile uint8_t keep_moving = 0;    //a state to determine if there are steps remaining to move
@@ -315,6 +270,7 @@ static int move_start = 0;
 static int debug10, debug11;
 static int debug12, debug13, debug14, debug15;
 static int debug16, debug17, debug18;
+static int debug19, debug20;
 //currently each change in x and y is 585 steps, z axis is a change of 2000
 static PT_THREAD (protothread_move(struct pt *pt))
 {
@@ -335,6 +291,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
   static image_t last_pixel;
   static image_t pixel;
   uint8_t z_start = image[0].z;
+  debug19 = z_start; debug20 = image_size;
 //  // Move Z to start position
 //  move(&stp_3, Z_START);
 //  keep_moving = 1;
@@ -343,9 +300,11 @@ static PT_THREAD (protothread_move(struct pt *pt))
 
   // Find highest position in image and start there
   for (i = 0; i < z_start+1; i++) {
-      debug10 = i;
+      debug10 = i; debug19 = z_start;
+      PT_YIELD_TIME_msec(2000);
     for (j = 0; j < image_size; j++) {
-        debug11 = j;
+        debug11 = j; debug20 = image_size;
+         PT_YIELD_TIME_msec(2000);
       // Check if z position should be cut
       pixel = image[j];
       debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
@@ -359,6 +318,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
         keep_moving = 1;
         PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
         disable_stp(&stp_3);
+        debug15++;
       }
       // Now, cut x & y 
       x_pos = pixel.x*STEP_X;
@@ -366,7 +326,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
       keep_moving = 0;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_1);
-      y_pos = pixel.y*STEP_Y;
+      y_pos = pixel.y*STEP_Y + Y_START;
       move(&stp_2, y_pos);
       keep_moving = 0;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
@@ -398,7 +358,6 @@ static PT_THREAD (protothread_move(struct pt *pt))
  * @param pt
  * @return 
  */
-
 static PT_THREAD (protothread_align(struct pt *pt))
 {
   PT_BEGIN(pt);
@@ -430,7 +389,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
       PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 0;
       stp_2.stps_left = 0;
-      stp_3.stps_left = 10;
+      stp_3.stps_left = 50;
       keep_moving = 1;
       //Halting until the desired position is reached
       PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
@@ -439,8 +398,8 @@ static PT_THREAD (protothread_align(struct pt *pt))
     stp_3.pos = 0;
    
     // Align on the x axis last
-    while(read_limit_x() == 0){
-      set_dir(&stp_1, 0 );
+    while(read_limit_x() == 0) {
+      set_dir(&stp_1, 0);
       enable_stp(&stp_1);
       PT_YIELD_TIME_msec(SLEEP_TIME);
       stp_1.stps_left = 50;
@@ -577,12 +536,12 @@ static PT_THREAD (protothread_tft(struct pt *pt))
             sprintf(buffer,"aligned");
             tft_writeString(buffer);
         }
-        if (move_start) {
-            tft_setCursor(60, 30);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"moved");
-            tft_writeString(buffer);
-        }
+//        if (debug3) {
+//            tft_setCursor(60, 70);
+//            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
+//            sprintf(buffer,"y %d z %d x %d", debug100, debug101, debug102);
+//            tft_writeString(buffer);
+//        }
         if (debug3 != 1) {
             tft_setCursor(0, 70);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
@@ -592,7 +551,7 @@ static PT_THREAD (protothread_tft(struct pt *pt))
         if (aligned) {
             tft_setCursor(0, 50);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"moved res %d", debug15);
+            sprintf(buffer,"moved res %d zst %d isz %d", debug15, debug19, debug20);
             tft_writeString(buffer);
             tft_setCursor(0, 90);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
