@@ -182,7 +182,6 @@ void set_dc_state(dc_t* dc, uint8_t on_or_off)
 void move(stepper_t* stp, int target_pos)
 {
   int init_pos = stp->pos;
-  int Z_LIMIT = 5000;
   if (init_pos > target_pos) { // Need to lower
 //      set_RedLED();
     set_dir(stp, 0);
