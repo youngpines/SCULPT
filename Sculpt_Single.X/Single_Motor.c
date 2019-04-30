@@ -9,11 +9,12 @@
 
 #define NUM_STEPS_X 7000
 #define NUM_STEPS_Z 8000
-#define NUM_STEPS_Y 15000
+#define NUM_STEPS_Y 21000
 
 #define X_START 0
-#define Y_START 5000
-#define Z_START 2500
+//4500 one end
+#define Y_START 16500
+#define Z_START 2650
 typedef unsigned char uint8_t;
 volatile uint8_t turned_on = 0;
 volatile uint8_t turned_off = 0;
@@ -115,7 +116,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
     while(read_limit_z() == 0) stp_3.stps_left = 50;
     //set_RedLED();
     disable_z();
-    stp_3.stps_left = NUM_STEPS_Z;
+    stp_3.stps_left = Z_START;
     mPORTBSetBits(stp_3.DIR);
     enable_z();
     PT_YIELD_TIME_msec(2);
