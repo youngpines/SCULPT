@@ -16,14 +16,16 @@ import sys
 
 # Opening up the target image
 im = \
-Image.open('/home/ho-jung/Desktop/Junior/SCULPT/TestImages/black_c_zoomed.png')
+Image.open('/home/ho-jung/Desktop/Junior/SCULPT/TestImages/fish.png')
 #displaying the target image for checking function
+#im = im.rotate(90)
 im.show()
 
 #converting the image to greyscale and resizing
 grey = im.convert('L')
 # size = 248, 128
-size = 17, 21
+#size =73, 38 
+size = 45, 38 
 grey = grey.resize(size,Image.LANCZOS)
 np.set_printoptions(threshold=sys.maxsize)
 #displaying the final to ensure it worked well
@@ -42,6 +44,8 @@ pixX = pixIdx[0].ravel()
 pixY = pixIdx[1].ravel()
 pixFlat = pixels.ravel()
 largestVal = np.sort(pixFlat)[-1]
+print("largest value")
+print(largestVal)
 pixAll = np.column_stack((pixX, pixY, np.subtract(np.repeat(largestVal,
     pixFlat.size), pixFlat)))
 print("imagedata")
@@ -57,6 +61,16 @@ happy = str(list(pixAll)).replace("array(","").replace(")", "").replace('[',
 print(happy)
 print(pixVis)
 print(pixXVis)
+
+def matprint(mat, fmt="g"):
+    col_maxes = [max([len(("{:"+fmt+"}").format(x)) for x in col]) for col in mat.T]
+    for x in mat:
+        for i, y in enumerate(x):
+            print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
+        print("")
+
+matprint(pixVis)
+
 exit = "e\r"
 #ser.write(str.encode(exit))
 time.sleep(1)
