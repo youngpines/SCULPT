@@ -1,12 +1,13 @@
 #include "config_1_2_3.h" // Modified to allow 9600 baudrate
 // threading library
-//#define use_uart_serial
+#define use_uart_serial
 #include "pt_cornell_1_2_3.h"
 #include "gpio.h"
 #ifndef _SUPPRESS_PLIB_WARNING
 #define _SUPPRESS_PLIB_WARNING
 #endif
 //////////////////////////////////////
+#ifdef TFT
 // graphics libraries
 #include "tft_master.h"
 #include "tft_gfx.h"
@@ -14,6 +15,7 @@
 #include <stdlib.h>
 // string buffer
 char buffer[60];
+#endif // TFT
 ////////////////////////////////////
 
 ////////////////////////////////////
@@ -73,7 +75,9 @@ static struct pt pt_serial, // thread to import data via UART
                  pt_align;  // thread to align via limit switches
 // The following threads are necessary for UART control
 static struct pt pt_input, pt_output, pt_DMA_output;
+#ifdef TFT
 static struct pt pt_tft;
+#endif // TFT
 
 // Data array holding pixelated info of image
 typedef unsigned char uint8_t;
@@ -84,6 +88,28 @@ typedef struct {
 } image_t;
 int image_size = 0;
 image_t image[MAX_IMAGE_SIZE] = {0};
+/*{
+{0, 0, 8}, 
+{ 0,  1, 50}, 
+{ 0,  2, 67}, 
+{0, 3, 0}, 
+{0, 4, 1}, 
+{ 1,  0, 90}, 
+{  1,   1, 171}, 
+{  1,   2, 151}, 
+{ 1,  3, 88}, 
+{  1,   4, 108}, 
+{ 2,  0, 60}, 
+{  2,   1, 124}, 
+{  2,   2, 139}, 
+{  2,   3, 119}, 
+{  2,   4, 161}, 
+{3, 0, 0}, 
+{3, 1, 4}, 
+{ 3,  2, 39}, 
+{3, 3, 0}, 
+{ 3,  4, 27}};
+*/
 /*
 {
 {0, 0, 255}, 
@@ -219,13 +245,13 @@ static PT_THREAD (protothread_move(struct pt *pt))
   move_start = 1;
   //set_RedLED();
   //PT_YIELD_TIME_msec(500);
-  //clear_RedLED();
-  //clear_GreenLED();
+  clear_RedLED();
+  clear_GreenLED();
  
   static int x_pos = 0; static int y_pos = 0; static int z_pos = 0;
   static int i;
   static int j;
-  static image_t next_pixel;
+  static image_t last_pixel;
   static image_t pixel;
   static int raise_x = 0; static int raise_y = 0 ;
   debug19 = z_start; debug20 = image_size;
@@ -236,27 +262,34 @@ static PT_THREAD (protothread_move(struct pt *pt))
 //  disable_stp(&stp_3);
 
   // Find highest position in image and start there
-  for (i = 0; i < z_start+1; i=i+15) {
+  for (i = 0; i < z_start+1; i=i+50) {
       debug10 = i; debug19 = z_start;
-      PT_YIELD_TIME_msec(3000);
+      toggle_RedLED();
+    //  PT_YIELD_TIME_msec(2000);
     for (j = 0; j < image_size; j++) {
         debug11 = j; debug20 = image_size;
-        
-         PT_YIELD_TIME_msec(3000);
+        toggle_GreenLED();
+    //     PT_YIELD_TIME_msec(2000);
       // Check if z position should be cut
       pixel = image[j];
       debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
-      debug16 = next_pixel.x; debug17 = next_pixel.y; debug18 = next_pixel.z;
       
-      if (j == image_size-1) next_pixel = pixel;
-      if (pixel.z <= i && j != image_size-1) { 
-          if (absDiff(image[j+1].y, pixel.y)> 1) raise_y = 1;
-          if (absDiff(next_pixel.x, pixel.x)> 1) raise_x = 1;
-          continue; 
+      
+      if (j == 0) {
+          last_pixel = pixel;
+          if (i != 0) {
+              raise_y = 1; 
+              raise_x = 1;
+          }
       }
-      if (absDiff(next_pixel.x, pixel.x) >= 1 || 
-          absDiff(next_pixel.y, pixel.y) > 1  ||
-          (i == z_start && j == image_size-1)) {
+      else {
+        if (absDiff(image[j-1].y, pixel.y)> 1) raise_y = 1;
+        if (absDiff(last_pixel.x, pixel.x)> 1) raise_x = 1;
+      }
+      debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
+      if (pixel.z <= i && j != 0) continue; 
+      if (absDiff(last_pixel.x, pixel.x) >= 1 || raise_y == 1  ||
+          (i == z_start && j == 0)) {
           debug15++;
         set_dc_state(&dc, 0);
         z_pos = Z_START;
@@ -267,9 +300,9 @@ static PT_THREAD (protothread_move(struct pt *pt))
       }
       // Travel to (x, y) coordinate to drill
       //debug24 = last_pixel.x; debug25 = pixel.x;
-      debug24 = j != 0 && absDiff(next_pixel.x, pixel.x)> 1;
+      debug24 = j != 0 && absDiff(last_pixel.x, pixel.x)> 1;
       debug25 = raise_x == 1;
-      if (j != 0 && raise_x == 1) {
+      if (raise_x == 1) {
           debug26++;
         set_dc_state(&dc, 0);
         set_dir(&stp_1, 0);
@@ -292,10 +325,9 @@ static PT_THREAD (protothread_move(struct pt *pt))
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_1);
       
-      debug21 = image[j+1].y; debug22 = pixel.y;
-      debug23 = (j != 0 && absDiff(image[j+1].y, pixel.y) > 1);
-      
-      if (j != 0 && raise_y == 1) {
+      debug21 = image[j-1].y; debug22 = pixel.y;
+      if (raise_y == 1) {
+          debug23++;
         set_dc_state(&dc, 0);
         set_dir(&stp_2, 0);
         enable_stp(&stp_2);
@@ -312,7 +344,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
         stp_2.stps_left = 0;
         stp_2.pos = 0;       
       }
-      if ( (j != 0 && raise_x == 1) || ((j != 0 && raise_y == 1)) && i > 120 ) {
+      if ( raise_x == 1 || (raise_y == 1 && i > 120) ) {
         debug29++;
         if (stp_2.pos < Y_START) {
           set_dc_state(&dc, 0);
@@ -350,12 +382,12 @@ static PT_THREAD (protothread_move(struct pt *pt))
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_3);
       
-      next_pixel = pixel;
+      last_pixel = pixel;
       raise_x = 0; raise_y = 0;
-      debug16 = next_pixel.x; debug17 = next_pixel.y; debug18 = next_pixel.z;
+      debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
     }
   }
-  
+  clear_RedLED(); clear_GreenLED();
   set_dc_state(&dc, 0);
   // Once done working through the image array just yield forever
   PT_YIELD_UNTIL(&pt_move, image_carved == 0); 
@@ -365,6 +397,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
   keep_moving = 1;
   PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
   disable_stp(&stp_3);
+  set_RedLED(); set_GreenLED();
   load_start_cond();
   //while(1) PT_YIELD(&pt_move);
   }
@@ -385,7 +418,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
     // Wait for the initial data from serial thread before aligning
     PT_YIELD_UNTIL(&pt_align, data_loaded == 1);
     // Align on the y axis first
-  // set_tftLED();
+    set_RedLED();
     while(read_limit_y() == 0) {
       set_dir(&stp_2, 0);
       enable_stp(&stp_2);
@@ -434,9 +467,8 @@ static PT_THREAD (protothread_align(struct pt *pt))
     // All alignments done, Wait for user to confirm material is loaded
     // Then use other threads until complete
     aligned = 1; debug40++;
-    // TODO take this out 
-    PT_YIELD(&pt_align);
     while(read_mat_load() == 0); //do nothing but wait
+    clear_RedLED(); clear_GreenLED();
     // Realigning after material loaded only at the start of execution
     if (start == 0){  
       // Raising z to be completely clear
@@ -492,7 +524,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
   static int count = 0;
   debug30 = count;
   while(1) { 
-     // set_GreenLED();
+    set_GreenLED();
     // Send the prompt via DMA to serial
     sprintf(PT_send_buffer,"cmd>");
     // Spawning a print thread
@@ -519,11 +551,11 @@ static PT_THREAD (protothread_serial(struct pt *pt))
       debug31 = image[count].x; debug32 = image[count].y; debug33 = image[count].z;
       count++;
       debug30 = count;
-      //toggle_RedLED();
+      toggle_RedLED();
       break;
     case 'e': // All data loaded, Terminate signal sent
-      //if (count == image_size) clear_GreenLED();
-        debug30 = count;
+      if (count == image_size) clear_GreenLED();
+      debug30 = count;
       data_loaded = 1;
       PT_YIELD_UNTIL(&pt_serial, data_loaded == 0);
       count = 0;
@@ -538,6 +570,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
 } // serial thread
 
 
+#ifdef TFT
 static PT_THREAD (protothread_tft(struct pt *pt))
 {
     PT_BEGIN(pt);
@@ -622,6 +655,7 @@ static PT_THREAD (protothread_tft(struct pt *pt))
       } // END WHILE(1)
   PT_END(pt);
 } // timer thread
+#endif //TFT
 
 /************************** [ Main ] ******************************************/
 
@@ -641,8 +675,9 @@ void main(void) {
  // PT_INIT(&pt_serial);
   PT_INIT(&pt_move);
   PT_INIT(&pt_align);
+  
+#ifdef TFT
   PT_INIT(&pt_tft);
- 
   // Init everything else
    // init the display
   tft_init_hw();
@@ -650,18 +685,21 @@ void main(void) {
   tft_fillScreen(ILI9340_BLACK);
   //240x320 vertical display
   tft_setRotation(1); // Use tft_setRotation(1) for 320x240
-  //init_RedLED(); init_GreenLED();
  // init_tftLED();
+#endif // TFT
+  init_RedLED(); init_GreenLED();
   init_limit_switches();
   init_steppers(&stp_1, &stp_2, &stp_3);
   init_dc_motor(&dc);
   load_start_cond();
-  //create_dummy_image();  
+ // create_dummy_image();  
   // Schedule the threads
   while (1){
       PT_SCHEDULE(protothread_serial(&pt_serial));
       PT_SCHEDULE(protothread_move(&pt_move)); 
       PT_SCHEDULE(protothread_align(&pt_align)); 
+#ifdef TFT
       PT_SCHEDULE(protothread_tft(&pt_tft));
+#endif // TFT
   }
 } // main

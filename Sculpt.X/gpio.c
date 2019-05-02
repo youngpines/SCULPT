@@ -7,39 +7,48 @@ void init_limit_switches(void)
   mPORTASetPinsDigitalIn(BIT_2);  // RA2 - Y axis
   mPORTASetPinsDigitalIn(BIT_3);  // RA3 - X axis
   mPORTASetPinsDigitalIn(BIT_4);  // RA4 - Z axis
-  //mPORTBSetPinsDigitalIn(BIT_2);  // RB2 - Confirm Material Loaded
+#ifndef TFT
+  mPORTBSetPinsDigitalIn(BIT_2);  // RB3 - Confirm Material Loaded
+#else
   mPORTBSetPinsDigitalIn(BIT_3);  // RB2 - Confirm Material Loaded
+#endif // TFT
   
   // Enabling pulldowns for all buttons        
   EnablePullDownA(BIT_2);
   EnablePullDownA(BIT_3);
   EnablePullDownA(BIT_4);
-  //EnablePullDownB(BIT_2); 
+#ifndef TFT
+  EnablePullDownB(BIT_2); 
+#else
   EnablePullDownB(BIT_3); 
+#endif // TFT
 }
 
 void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3)
 {
   // Stepper 1 (X)
-  //stp_1->DIR   = BIT_0;
+#ifndef TFT
+  stp_1->DIR   = BIT_0;
+  stp_1->STP   = BIT_1;
+#else
   stp_1->DIR = BIT_1;
-  //stp_1->STP   = BIT_1;
   stp_1->STP   = BIT_10;
+#endif //TFT
   stp_1->SLEEP = BIT_0;
   stp_1->dir_move = 0;
   stp_1->stps_left = 0;
   stp_1->pos = 0;
   stp_1->stp_num = 1;
-  //mPORTBSetPinsDigitalOut(stp_1->DIR);
-  
+#ifndef TFT
+  mPORTBSetPinsDigitalOut(stp_1->DIR);
+  mPORTBClearBits(stp_1->DIR);
+#else
   mPORTASetPinsDigitalOut(stp_1->DIR);
-  mPORTBSetPinsDigitalOut(stp_1->STP);
-   
-  mPORTASetPinsDigitalOut(stp_1->SLEEP);
-  
   mPORTAClearBits(stp_1->DIR);
+#endif // TFT
+  mPORTBSetPinsDigitalOut(stp_1->STP);
+  mPORTASetPinsDigitalOut(stp_1->SLEEP);
   mPORTBClearBits(stp_1->STP);
-  
   mPORTAClearBits(stp_1->SLEEP);
     
   // Stepper 2 (Y)
@@ -76,8 +85,11 @@ void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3)
 void init_dc_motor(dc_t* dc)
 {
   dc->on = 0;
-  //dc->ENABLE = BIT_11;
+#ifndef TFT
+  dc->ENABLE = BIT_11;
+#else
   dc->ENABLE = BIT_15;
+#endif // TFT
   mPORTBSetPinsDigitalOut(dc->ENABLE);
   mPORTBClearBits(dc->ENABLE);
 }
@@ -85,29 +97,30 @@ void init_dc_motor(dc_t* dc)
 uint8_t read_limit_x(void) {return mPORTAReadBits(BIT_3);}
 uint8_t read_limit_y(void) {return mPORTAReadBits(BIT_2);}
 uint8_t read_limit_z(void) {return mPORTAReadBits(BIT_4);}
-//uint8_t read_mat_load(void) {return mPORTBReadBits(BIT_2);}
+#ifndef TFT
+uint8_t read_mat_load(void) {return mPORTBReadBits(BIT_2);}
+#else
 uint8_t read_mat_load(void) {return mPORTBReadBits(BIT_3);}
+#endif // TFT
 
 
 void set_dir(stepper_t* stp, uint8_t pos_mvmt) 
 {
-    if (pos_mvmt == 1) stp->dir_move = 1;
-    else stp->dir_move = 0;
+  if (pos_mvmt == 1) stp->dir_move = 1;
+  else stp->dir_move = 0;
   switch(stp->stp_num) {
     case 1:
-        break;
-        
+#ifndef TFT
       if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
       else mPORTBClearBits(stp->DIR);
-        
-        if (pos_mvmt == 1) mPORTASetBits(stp->DIR);
+#else
+      if (pos_mvmt == 1) mPORTASetBits(stp->DIR);
       else mPORTAClearBits(stp->DIR);
+#endif //TFT
       break;
     case 2:
       if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
-      else {
-          mPORTBClearBits(stp->DIR);
-      }
+      else mPORTBClearBits(stp->DIR);
       break;
     case 3:
       if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
@@ -122,7 +135,6 @@ void toggle_stp(stepper_t* stp)
 {
   switch(stp->stp_num) {
     case 1:
-        break;
       mPORTBToggleBits(stp->STP);
       break;
     case 2:

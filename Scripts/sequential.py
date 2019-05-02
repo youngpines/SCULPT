@@ -24,7 +24,7 @@ im.show()
 #converting the image to greyscale and resizing
 grey = im.convert('L')
 #size = 45, 38 
-size = 2, 3
+size = 5, 4
 grey = grey.resize(size,Image.LANCZOS)
 np.set_printoptions(threshold=sys.maxsize)
 #displaying the final to ensure it worked well
