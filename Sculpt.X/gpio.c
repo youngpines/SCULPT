@@ -31,11 +31,15 @@ void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3)
   stp_1->pos = 0;
   stp_1->stp_num = 1;
   //mPORTBSetPinsDigitalOut(stp_1->DIR);
+  
   mPORTASetPinsDigitalOut(stp_1->DIR);
   mPORTBSetPinsDigitalOut(stp_1->STP);
+   
   mPORTASetPinsDigitalOut(stp_1->SLEEP);
+  
   mPORTAClearBits(stp_1->DIR);
   mPORTBClearBits(stp_1->STP);
+  
   mPORTAClearBits(stp_1->SLEEP);
     
   // Stepper 2 (Y)
@@ -91,8 +95,11 @@ void set_dir(stepper_t* stp, uint8_t pos_mvmt)
     else stp->dir_move = 0;
   switch(stp->stp_num) {
     case 1:
-//      if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
-//      else mPORTBClearBits(stp->DIR);
+        break;
+        
+      if (pos_mvmt == 1) mPORTBSetBits(stp->DIR);
+      else mPORTBClearBits(stp->DIR);
+        
         if (pos_mvmt == 1) mPORTASetBits(stp->DIR);
       else mPORTAClearBits(stp->DIR);
       break;
@@ -115,6 +122,7 @@ void toggle_stp(stepper_t* stp)
 {
   switch(stp->stp_num) {
     case 1:
+        break;
       mPORTBToggleBits(stp->STP);
       break;
     case 2:

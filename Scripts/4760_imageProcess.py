@@ -48,7 +48,7 @@ for i in range(size[1]):
         else:
             print("%s," % val[ 2 : -1])
 #        ser.write(str.encode(val))
-        time.sleep(0.0105)
+        time.sleep(2)
     if (i == range(size[1]-1)):
         print("}")
     else:

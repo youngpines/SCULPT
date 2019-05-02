@@ -20,7 +20,7 @@ char buffer[60];
 
 /*Pinout for the PIC for reference*/
 //RA0   -   Enable stepper 1
-//RA1   -   UART2 TX // stepper 1 DIR
+//RA1   -   UART2 TX (green) // stepper 1 DIR
 //RA2   -   Y axis Limit Switch
 //RA3   -   X axis Limit Switch
 //RA4   -   Z axis Limit Switch
@@ -34,7 +34,7 @@ char buffer[60];
 //RB7   -   DIR pin for stepper 3 (z-axis)
 //RB8   -   STP pin for stepper 3 (z-axis)
 //RB9   -   Enable stepper 3
-//RB10  -   UART2 RX // stepper 1 STP
+//RB10  -   UART2 RX (white) // stepper 1 STP
 //RB11  -   DC Motor Enable // tft
 //RB12  -   Not on Package
 //RB13  -   Enable stepper 2
@@ -82,9 +82,9 @@ typedef struct {
   uint8_t y;
   uint8_t z;
 } image_t;
-int image_size = 38*45;
-image_t image[MAX_IMAGE_SIZE] = 
-
+int image_size = 0;
+image_t image[MAX_IMAGE_SIZE] = {0};
+/*
 {
 {0, 0, 255}, 
 {0, 1, 255}, 
@@ -116,7 +116,7 @@ image_t image[MAX_IMAGE_SIZE] =
 {2, 7, 0}, 
 {2, 8, 0}, 
 {2, 9, 0}};
-
+*/
 
 
 //state variables for the process
@@ -124,10 +124,10 @@ volatile uint8_t keep_moving = 0;    //a state to determine if there are steps r
 volatile uint8_t x_enable = 0;
 volatile uint8_t y_enable = 0;
 volatile uint8_t z_enable = 0;
-volatile int image_carved = 0;   //a state variable to determine if the image is carved yet or not
-volatile int data_loaded = 0;    //a state variable to determine if the image is loaded or not
-volatile int aligned = 0;        // a state variable to determine if the device is aligned or not
-volatile int material_loaded = 0;// a state that determines if material has been loaded into the device
+volatile static int image_carved = 0;   //a state variable to determine if the image is carved yet or not
+volatile static int data_loaded = 0;    //a state variable to determine if the image is loaded or not
+volatile static int aligned = 0;        // a state variable to determine if the device is aligned or not
+volatile static int material_loaded = 0;// a state that determines if material has been loaded into the device
 
 void create_dummy_image() {
 //    int i, j, z;
@@ -207,6 +207,7 @@ static int debug19, debug20;
 static int debug21, debug22, debug23;
 static int debug24, debug25, debug26;
 static int debug27, debug28, debug29;
+uint8_t z_start = 255;
 //currently each change in x and y is 585 steps, z axis is a change of 2000
 static PT_THREAD (protothread_move(struct pt *pt))
 {
@@ -224,10 +225,9 @@ static PT_THREAD (protothread_move(struct pt *pt))
   static int x_pos = 0; static int y_pos = 0; static int z_pos = 0;
   static int i;
   static int j;
-  static image_t last_pixel;
+  static image_t next_pixel;
   static image_t pixel;
   static int raise_x = 0; static int raise_y = 0 ;
-  uint8_t z_start = 255;
   debug19 = z_start; debug20 = image_size;
 //  // Move Z to start position
 //  move(&stp_3, Z_START);
@@ -236,25 +236,27 @@ static PT_THREAD (protothread_move(struct pt *pt))
 //  disable_stp(&stp_3);
 
   // Find highest position in image and start there
-  for (i = 0; i < z_start+1; i=i+50) {
+  for (i = 0; i < z_start+1; i=i+15) {
       debug10 = i; debug19 = z_start;
- //     PT_YIELD_TIME_msec(2000);
+      PT_YIELD_TIME_msec(3000);
     for (j = 0; j < image_size; j++) {
         debug11 = j; debug20 = image_size;
         
-  //       PT_YIELD_TIME_msec(2000);
+         PT_YIELD_TIME_msec(3000);
       // Check if z position should be cut
       pixel = image[j];
       debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
-
+      debug16 = next_pixel.x; debug17 = next_pixel.y; debug18 = next_pixel.z;
       
-      if (i == 0 && j == 0) last_pixel = pixel;
-       if (pixel.z <= i) { 
-          if (absDiff(image[j-1].y, pixel.y)> 1) raise_y = 1;
-          if (absDiff(last_pixel.x, pixel.x)> 1) raise_x = 1;
+      if (j == image_size-1) next_pixel = pixel;
+      if (pixel.z <= i && j != image_size-1) { 
+          if (absDiff(image[j+1].y, pixel.y)> 1) raise_y = 1;
+          if (absDiff(next_pixel.x, pixel.x)> 1) raise_x = 1;
           continue; 
       }
-      if (absDiff(last_pixel.x, pixel.x) >= 1 || absDiff(last_pixel.y, pixel.y) > 1) {
+      if (absDiff(next_pixel.x, pixel.x) >= 1 || 
+          absDiff(next_pixel.y, pixel.y) > 1  ||
+          (i == z_start && j == image_size-1)) {
           debug15++;
         set_dc_state(&dc, 0);
         z_pos = Z_START;
@@ -265,9 +267,9 @@ static PT_THREAD (protothread_move(struct pt *pt))
       }
       // Travel to (x, y) coordinate to drill
       //debug24 = last_pixel.x; debug25 = pixel.x;
-      debug24 = j != 0 && absDiff(last_pixel.x, pixel.x)> 1;
+      debug24 = j != 0 && absDiff(next_pixel.x, pixel.x)> 1;
       debug25 = raise_x == 1;
-      if (j != 0 && absDiff(last_pixel.x, pixel.x)> 1 || raise_x == 1) {
+      if (j != 0 && raise_x == 1) {
           debug26++;
         set_dc_state(&dc, 0);
         set_dir(&stp_1, 0);
@@ -290,10 +292,10 @@ static PT_THREAD (protothread_move(struct pt *pt))
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_1);
       
-      debug21 = image[j-1].y; debug22 = pixel.y;
-      debug23 = (j != 0 && absDiff(image[j-1].y, pixel.y) > 1);
+      debug21 = image[j+1].y; debug22 = pixel.y;
+      debug23 = (j != 0 && absDiff(image[j+1].y, pixel.y) > 1);
       
-      if (j != 0 && absDiff(image[j-1].y, pixel.y)> 1 || raise_y == 1) {
+      if (j != 0 && raise_y == 1) {
         set_dc_state(&dc, 0);
         set_dir(&stp_2, 0);
         enable_stp(&stp_2);
@@ -310,28 +312,29 @@ static PT_THREAD (protothread_move(struct pt *pt))
         stp_2.stps_left = 0;
         stp_2.pos = 0;       
       }
-      if ( (j != 0 && absDiff(last_pixel.x, pixel.x)> 1 || raise_x == 1) ||
-          ((j != 0 && absDiff(image[j-1].y, pixel.y)> 1 || raise_y == 1)) && i > 120 ) {
-          debug29++;
-        set_dc_state(&dc, 0);
-        set_dir(&stp_3, 0);
-        enable_stp(&stp_3);
-        PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_z() == 0) {
-         // stp_1.stps_left = 0;
-          stp_3.stps_left = 50;
-         // stp_3.stps_left = 0;
-          //keep_moving = 1;
-          // Halting until the desired position is reached
-         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+      if ( (j != 0 && raise_x == 1) || ((j != 0 && raise_y == 1)) && i > 120 ) {
+        debug29++;
+        if (stp_2.pos < Y_START) {
+          set_dc_state(&dc, 0);
+          set_dir(&stp_3, 0);
+          enable_stp(&stp_3);
+          PT_YIELD_TIME_msec(SLEEP_TIME);
+          while(read_limit_z() == 0) {
+           // stp_1.stps_left = 0;
+            stp_3.stps_left = 50;
+           // stp_3.stps_left = 0;
+           //keep_moving = 1;
+           // Halting until the desired position is reached
+          // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+          }
+          stp_3.stps_left = 0;
+          stp_3.pos = 0;  
+          z_pos = Z_START;
+          move(&stp_3, z_pos);
+          keep_moving = 1;
+          PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+          disable_stp(&stp_3);
         }
-        stp_3.stps_left = 0;
-        stp_3.pos = 0;  
-        z_pos = Z_START;
-        move(&stp_3, z_pos);
-        keep_moving = 1;
-        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-        disable_stp(&stp_3);
       }
       y_pos = pixel.y*STEP_Y + Y_START; debug2 = pixel.y;
       move(&stp_2, y_pos);
@@ -341,15 +344,15 @@ static PT_THREAD (protothread_move(struct pt *pt))
       
       set_dc_state(&dc, 1); debug4 = 1;
       z_pos = Z_START-i*STEP_Z;
-      debug14 = z_pos;
+      //debug14 = z_pos;
       move(&stp_3, z_pos);
       keep_moving = 1;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_3);
       
-      last_pixel = pixel;
+      next_pixel = pixel;
       raise_x = 0; raise_y = 0;
-      debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
+      debug16 = next_pixel.x; debug17 = next_pixel.y; debug18 = next_pixel.z;
     }
   }
   
@@ -362,8 +365,6 @@ static PT_THREAD (protothread_move(struct pt *pt))
   keep_moving = 1;
   PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
   disable_stp(&stp_3);
-  aligned = 0;
-  PT_YIELD_UNTIL(&pt_move, aligned == 1);
   load_start_cond();
   //while(1) PT_YIELD(&pt_move);
   }
@@ -375,6 +376,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
  * @param pt
  * @return 
  */
+static int debug40 = 0;
 static PT_THREAD (protothread_align(struct pt *pt))
 {
   PT_BEGIN(pt);
@@ -431,7 +433,9 @@ static PT_THREAD (protothread_align(struct pt *pt))
 
     // All alignments done, Wait for user to confirm material is loaded
     // Then use other threads until complete
-    aligned = 1;
+    aligned = 1; debug40++;
+    // TODO take this out 
+    PT_YIELD(&pt_align);
     while(read_mat_load() == 0); //do nothing but wait
     // Realigning after material loaded only at the start of execution
     if (start == 0){  
@@ -478,14 +482,15 @@ static PT_THREAD (protothread_align(struct pt *pt))
 } // alignment thread
 
 
-
+static int debug30, debug31, debug32, debug33;
 //=== Serial thread =================================================
 static PT_THREAD (protothread_serial(struct pt *pt))
 {
   PT_BEGIN(pt);
   static char cmd[1];
-  static uint8_t x_val, y_val, z_val;
+  static int x_val, y_val, z_val;
   static int count = 0;
+  debug30 = count;
   while(1) { 
      // set_GreenLED();
     // Send the prompt via DMA to serial
@@ -500,26 +505,33 @@ static PT_THREAD (protothread_serial(struct pt *pt))
     // returns when the thread dies
     // in this case, when <enter> is pushed
     // now parse the string
-    sscanf(PT_term_buffer, "%s %c %c %c", cmd, &x_val, &y_val, &z_val);
-
+    sscanf(PT_term_buffer, "%s %d %d %d", cmd, &x_val, &y_val, &z_val);
+    debug19 = image_size; debug20 = z_start;
     switch(cmd[0]) {
     case 's':
-      image_size = z_val;  
+      image_size = x_val*y_val;  
+      z_start = (uint8_t) z_val;
+      break;
     case 'p': // Load pixel values into the pixel array
       image[count].x = x_val;
       image[count].y = y_val;
       image[count].z = z_val;
+      debug31 = image[count].x; debug32 = image[count].y; debug33 = image[count].z;
       count++;
+      debug30 = count;
       //toggle_RedLED();
       break;
     case 'e': // All data loaded, Terminate signal sent
       //if (count == image_size) clear_GreenLED();
+        debug30 = count;
       data_loaded = 1;
       PT_YIELD_UNTIL(&pt_serial, data_loaded == 0);
+      count = 0;
       break;
     default: // Do nothing                  
       break;
     }
+    //PT_YIELD(&pt_serial);
     // never exit while
   } // END WHILE(1) 
   PT_END(pt);
@@ -542,7 +554,7 @@ static PT_THREAD (protothread_tft(struct pt *pt))
         tft_writeString(buffer);
 
         if (debug3) {
-            tft_setCursor(60, 30);
+            tft_setCursor(100, 30);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
             sprintf(buffer,"toggle");
             tft_writeString(buffer);
@@ -550,7 +562,7 @@ static PT_THREAD (protothread_tft(struct pt *pt))
         if (aligned) {
             tft_setCursor(0, 30);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"aligned");
+            sprintf(buffer,"aligned %d", debug40);
             tft_writeString(buffer);
         }
 //        if (debug3) {
@@ -565,14 +577,16 @@ static PT_THREAD (protothread_tft(struct pt *pt))
             sprintf(buffer,"x %u y %u z %u d %c", debug1, debug2, debug3, debug4);
             tft_writeString(buffer);
         }
-        if (aligned) {
+        if (1) {
             tft_setCursor(0, 50);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
             sprintf(buffer,"moved res %d zst %d isz %d", debug15, debug19, debug20);
+            //sprintf(buffer,"moved zst %d isz %d c %d", debug19, debug20, debug30);
             tft_writeString(buffer);
             tft_setCursor(0, 90);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
             sprintf(buffer,"i %d j %d", debug10, debug11);
+            //sprintf(buffer,"x %d y %d z %d", debug31, debug32, debug33);
             tft_writeString(buffer);
             tft_setCursor(0, 110);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
@@ -597,11 +611,11 @@ static PT_THREAD (protothread_tft(struct pt *pt))
             tft_setCursor(0,210);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
             // 21 22 23
-            sprintf(buffer,"y-1 %d y %d res %d", debug27, debug28, debug29);
+            sprintf(buffer,"y-1 %d y %d r %d z %d", debug21, debug22, debug23, debug29);
             tft_writeString(buffer);
              tft_setCursor(0,230);
             tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"x-1 %d x %d res %d", debug24, debug25, debug26);
+            sprintf(buffer,"dat %d a %d m %d k %d", data_loaded, aligned, material_loaded, keep_moving);
             tft_writeString(buffer);
         }
         // NEVER exit while
@@ -642,10 +656,10 @@ void main(void) {
   init_steppers(&stp_1, &stp_2, &stp_3);
   init_dc_motor(&dc);
   load_start_cond();
-  create_dummy_image();  
+  //create_dummy_image();  
   // Schedule the threads
   while (1){
-   //   PT_SCHEDULE(protothread_serial(&pt_serial));
+      PT_SCHEDULE(protothread_serial(&pt_serial));
       PT_SCHEDULE(protothread_move(&pt_move)); 
       PT_SCHEDULE(protothread_align(&pt_align)); 
       PT_SCHEDULE(protothread_tft(&pt_tft));

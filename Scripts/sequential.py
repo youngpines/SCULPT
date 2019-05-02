@@ -4,7 +4,7 @@ import numpy as np
 import serial, time
 
 import sys
-# Opening up a serial port to transmit to the Microcontroller
+## Opening up a serial port to transmit to the Microcontroller
 #ser = serial.Serial(
 #    port='/dev/ttyUSB0',        #the port can change based on which is used
 #    baudrate=9600,
@@ -23,9 +23,8 @@ im.show()
 
 #converting the image to greyscale and resizing
 grey = im.convert('L')
-# size = 248, 128
-#size =73, 38 
-size = 45, 38 
+#size = 45, 38 
+size = 2, 3
 grey = grey.resize(size,Image.LANCZOS)
 np.set_printoptions(threshold=sys.maxsize)
 #displaying the final to ensure it worked well
@@ -44,14 +43,14 @@ pixX = pixIdx[0].ravel()
 pixY = pixIdx[1].ravel()
 pixFlat = pixels.ravel()
 largestVal = np.sort(pixFlat)[-1]
-print("largest value")
+inverted =  np.subtract(np.repeat(largestVal, pixFlat.size), pixFlat)
+pixAll = np.column_stack((pixX, pixY, inverted))
+largestVal = np.sort(inverted)[-1]
+print("After, largest value")
 print(largestVal)
-pixAll = np.column_stack((pixX, pixY, np.subtract(np.repeat(largestVal,
-    pixFlat.size), pixFlat)))
 print("imagedata")
 print(pixAll)
 
-print(pixAll[:,  2])
 pixVis = np.resize(pixAll[:, 2], (pixels.shape[0], pixels.shape[1]))
 pixXVis = np.resize(pixAll[:, 0], (pixels.shape[0], pixels.shape[1]))
 
@@ -59,8 +58,7 @@ pixXVis = np.resize(pixAll[:, 0], (pixels.shape[0], pixels.shape[1]))
 happy = str(list(pixAll)).replace("array(","").replace(")", "").replace('[',
         '\n{').replace(']', '}')
 print(happy)
-print(pixVis)
-print(pixXVis)
+print("\r")
 
 def matprint(mat, fmt="g"):
     col_maxes = [max([len(("{:"+fmt+"}").format(x)) for x in col]) for col in mat.T]
@@ -70,9 +68,18 @@ def matprint(mat, fmt="g"):
         print("")
 
 matprint(pixVis)
-
+print("\r")
+pixelStats = "s %d %d %d\r" % (size[0], size[1], largestVal)
+print("Writing Stats [ %s ]" % pixelStats[:-1])
+#ser.write(str.encode(pixelStats))
+for i in range(pixAll.shape[0]):
+    pixelData = "p %d %d %d\r" % (pixAll[i][0], pixAll[i][1], pixAll[i][2])
+    print("Writing [ %s ]" % pixelData[:-1])
+#    ser.write(str.encode(pixelData))
+#    time.sleep(0.18)
 exit = "e\r"
+#time.sleep(1)
 #ser.write(str.encode(exit))
-time.sleep(1)
+#time.sleep(0.5)
 #ser.close()
 print("[ Done ] All pixels Loaded")
