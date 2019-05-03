@@ -63,7 +63,7 @@ char buffer[60];
 #define Z_LIMIT 8000
 #define X_START 350
 #define Y_START 4500
-#define Z_START 2500
+#define Z_START 2750
 int debug1 = 1; 
 int debug2 = 1;
 int debug3 = 1;
@@ -88,7 +88,8 @@ typedef struct {
 } image_t;
 int image_size = 0;
 image_t image[MAX_IMAGE_SIZE] = {0};
-/*{
+        /*
+{
 {0, 0, 8}, 
 { 0,  1, 50}, 
 { 0,  2, 67}, 
@@ -260,24 +261,70 @@ static PT_THREAD (protothread_move(struct pt *pt))
 //  keep_moving = 1;
 //  PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
 //  disable_stp(&stp_3);
-
+ set_RedLED(); set_GreenLED();
+    PT_YIELD_TIME_msec(500);
+    clear_RedLED(); clear_GreenLED();
+    PT_YIELD_TIME_msec(500);
+    set_RedLED(); set_GreenLED();
+    PT_YIELD_TIME_msec(500);
+    if (image_size == 20 || z_start == 171) clear_RedLED();
+    if (!(image[0].x == 0 && image[0].y == 0 && image[0].z == 8)) clear_GreenLED();
+    if (!(image[1].x == 0 && image[1].y == 1 && image[1].z == 50)) clear_GreenLED();
+    if (!(image[2].x == 0 && image[2].y == 2 && image[2].z == 67)) clear_GreenLED();
+    if (!(image[3].x == 0 && image[3].y == 3 && image[3].z == 0)) clear_GreenLED();
+    if (!(image[4].x == 0 && image[4].y == 4 && image[4].z == 1)) clear_GreenLED();
+    if (!(image[5].x == 1 && image[5].y == 0 && image[5].z == 90)) clear_GreenLED();
+    if (!(image[6].x == 1 && image[6].y == 1 && image[6].z == 171)) clear_GreenLED();
+    if (!(image[7].x == 1 && image[7].y == 2 && image[7].z == 151)) clear_GreenLED();
+    if (!(image[8].x == 1 && image[8].y == 3 && image[8].z == 88)) clear_GreenLED();
+    if (!(image[9].x == 1 && image[9].y == 4 && image[9].z == 108)) clear_GreenLED();
+    if (!(image[10].x == 2 && image[10].y == 0 && image[10].z == 60)) clear_GreenLED();
+    if (!(image[11].x == 2 && image[11].y == 1 && image[11].z == 124)) clear_GreenLED();
+    if (!(image[12].x == 2 && image[12].y == 2 && image[12].z == 139)) clear_GreenLED();
+    if (!(image[13].x == 2 && image[13].y == 3 && image[13].z == 119)) clear_GreenLED();
+    if (!(image[14].x == 2 && image[14].y == 4 && image[14].z == 161)) clear_GreenLED();
+    if (!(image[15].x == 3 && image[15].y == 0 && image[15].z == 0)) clear_GreenLED();
+    if (!(image[16].x == 3 && image[16].y == 1 && image[16].z == 4)) clear_GreenLED();
+    if (!(image[17].x == 3 && image[17].y == 2 && image[17].z == 39)) clear_GreenLED();
+    if (!(image[18].x == 3 && image[18].y == 3 && image[18].z == 0)) clear_GreenLED();
+    if (!(image[19].x == 3 && image[19].y == 4 && image[19].z == 27)) clear_GreenLED();
   // Find highest position in image and start there
-  for (i = 0; i < z_start+1; i=i+50) {
+  for (i = 0; i < z_start+1; i=i+10) {
       debug10 = i; debug19 = z_start;
-      toggle_RedLED();
-    //  PT_YIELD_TIME_msec(2000);
+    //  toggle_RedLED();
+    //  if (i > 20) set_RedLED();
+     // if (i > 80) clear_RedLED();
+      PT_YIELD_TIME_msec(2000);
     for (j = 0; j < image_size; j++) {
         debug11 = j; debug20 = image_size;
-        toggle_GreenLED();
-    //     PT_YIELD_TIME_msec(2000);
+    //    clear_GreenLED();
+         PT_YIELD_TIME_msec(2000);
       // Check if z position should be cut
       pixel = image[j];
       debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
-      
-      
+      if (j == 0 && !(image[0].x == 0 && image[0].y == 0 && image[0].z == 8)) clear_GreenLED();
+    if (j == 1 && !(image[1].x == 0 && image[1].y == 1 && image[1].z == 50)) clear_GreenLED();
+    if (j == 2 && !(image[2].x == 0 && image[2].y == 2 && image[2].z == 67)) clear_GreenLED();
+    if (j == 3 && !(image[3].x == 0 && image[3].y == 3 && image[3].z == 0)) clear_GreenLED();
+    if (j == 4 && !(image[4].x == 0 && image[4].y == 4 && image[4].z == 1)) clear_GreenLED();
+    if (j == 5 && !(image[5].x == 1 && image[5].y == 0 && image[5].z == 90)) clear_GreenLED();
+    if (j == 6 && !(image[6].x == 1 && image[6].y == 1 && image[6].z == 171)) clear_GreenLED();
+    if (j == 7 && !(image[7].x == 1 && image[7].y == 2 && image[7].z == 151)) clear_GreenLED();
+    if (j == 8 && !(image[8].x == 1 && image[8].y == 3 && image[8].z == 88)) clear_GreenLED();
+    if (j == 9 && !(image[9].x == 1 && image[9].y == 4 && image[9].z == 108)) clear_GreenLED();
+    if (j == 10 && !(image[10].x == 2 && image[10].y == 0 && image[10].z == 60)) clear_GreenLED();
+    if (j == 11 && !(image[11].x == 2 && image[11].y == 1 && image[11].z == 124)) clear_GreenLED();
+    if (j == 12 && !(image[12].x == 2 && image[12].y == 2 && image[12].z == 139)) clear_GreenLED();
+    if (j == 13 && !(image[13].x == 2 && image[13].y == 3 && image[13].z == 119)) clear_GreenLED();
+    if (j == 14 && !(image[14].x == 2 && image[14].y == 4 && image[14].z == 161)) clear_GreenLED();
+    if (j == 15 && !(image[15].x == 3 && image[15].y == 0 && image[15].z == 0)) clear_GreenLED();
+    if (j == 16 && !(image[16].x == 3 && image[16].y == 1 && image[16].z == 4)) clear_GreenLED();
+    if (j == 17 && !(image[17].x == 3 && image[17].y == 2 && image[17].z == 39)) clear_GreenLED();
+    if (j == 18 && !(image[18].x == 3 && image[18].y == 3 && image[18].z == 0)) clear_GreenLED();
+    if (j == 19 && !(image[19].x == 3 && image[19].y == 4 && image[19].z == 27)) clear_GreenLED();
       if (j == 0) {
-          last_pixel = pixel;
-          if (i != 0) {
+          if (i == 0) last_pixel = pixel;
+          else {
               raise_y = 1; 
               raise_x = 1;
           }
@@ -287,8 +334,9 @@ static PT_THREAD (protothread_move(struct pt *pt))
         if (absDiff(last_pixel.x, pixel.x)> 1) raise_x = 1;
       }
       debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
-      if (pixel.z <= i && j != 0) continue; 
-      if (absDiff(last_pixel.x, pixel.x) >= 1 || raise_y == 1  ||
+      if (pixel.z <= i) continue; 
+      set_GreenLED();
+      if (absDiff(last_pixel.x, pixel.x) >= 1 || absDiff(last_pixel.y, pixel.y) > 1  ||
           (i == z_start && j == 0)) {
           debug15++;
         set_dc_state(&dc, 0);
@@ -418,7 +466,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
     // Wait for the initial data from serial thread before aligning
     PT_YIELD_UNTIL(&pt_align, data_loaded == 1);
     // Align on the y axis first
-    set_RedLED();
+    //2set_RedLED();
     while(read_limit_y() == 0) {
       set_dir(&stp_2, 0);
       enable_stp(&stp_2);
@@ -554,7 +602,7 @@ static PT_THREAD (protothread_serial(struct pt *pt))
       toggle_RedLED();
       break;
     case 'e': // All data loaded, Terminate signal sent
-      if (count == image_size) clear_GreenLED();
+      if (count == 45*381) clear_GreenLED();
       debug30 = count;
       data_loaded = 1;
       PT_YIELD_UNTIL(&pt_serial, data_loaded == 0);
