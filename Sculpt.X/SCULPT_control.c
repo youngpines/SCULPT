@@ -246,6 +246,178 @@ static PT_THREAD (protothread_move(struct pt *pt))
   move_start = 1;
   //set_RedLED();
   //PT_YIELD_TIME_msec(500);
+  //clear_RedLED();
+  //clear_GreenLED();
+ 
+  static int x_pos = 0; static int y_pos = 0; static int z_pos = 0;
+  static int i;
+  static int j;
+  static image_t last_pixel;
+  static image_t pixel;
+  static int raise_x = 0; static int raise_y = 0 ;
+  uint8_t z_start = 255;
+  debug19 = z_start; debug20 = image_size;
+//  // Move Z to start position
+//  move(&stp_3, Z_START);
+//  keep_moving = 1;
+//  PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+//  disable_stp(&stp_3);
+
+  // Find highest position in image and start there
+  for (i = 0; i < z_start+1; i=i+10) {
+      debug10 = i; debug19 = z_start;
+ //     PT_YIELD_TIME_msec(2000);
+    for (j = 0; j < image_size; j++) {
+        debug11 = j; debug20 = image_size;
+        
+  //       PT_YIELD_TIME_msec(2000);
+      // Check if z position should be cut
+      pixel = image[j];
+      debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
+
+      
+      if (j == 0) {
+        if (i == 0) last_pixel = pixel;
+        else {
+          raise_x = 1;
+          raise_y = 1;
+        }
+      }
+       if (pixel.z <= i) { 
+          if (absDiff(image[j-1].y, pixel.y)> 1) raise_y = 1;
+          if (absDiff(last_pixel.x, pixel.x)> 1) raise_x = 1;
+          continue; 
+      }
+      if (absDiff(last_pixel.x, pixel.x) >= 1 || 
+          absDiff(last_pixel.y, pixel.y) > 1  ||
+          (i+10 >= z_start && j == image_size-1)) {
+          debug15++;
+        set_dc_state(&dc, 0);
+        z_pos = Z_START;
+        move(&stp_3, z_pos);
+        keep_moving = 1;
+        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+        disable_stp(&stp_3);
+      }
+      // Travel to (x, y) coordinate to drill
+      //debug24 = last_pixel.x; debug25 = pixel.x;
+      debug24 = j != 0 && absDiff(last_pixel.x, pixel.x)> 1;
+      debug25 = raise_x == 1;
+      if (j != 0 && absDiff(last_pixel.x, pixel.x)> 1 || raise_x == 1) {
+          debug26++;
+        set_dc_state(&dc, 0);
+        set_dir(&stp_1, 0);
+        enable_stp(&stp_1);
+        PT_YIELD_TIME_msec(SLEEP_TIME);
+        while(read_limit_x() == 0) {
+         // stp_1.stps_left = 0;
+          stp_1.stps_left = 50;
+         // stp_3.stps_left = 0;
+          //keep_moving = 1;
+          // Halting until the desired position is reached
+         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+        }
+        stp_1.stps_left = 0;
+        stp_1.pos = 0;       
+      }
+      x_pos = pixel.x*STEP_X + X_START; debug1 = pixel.x;
+      move(&stp_1, x_pos);
+      keep_moving = 1;
+      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+      disable_stp(&stp_1);
+      
+      debug21 = image[j-1].y; debug22 = pixel.y;
+      debug23 = (j != 0 && absDiff(image[j-1].y, pixel.y) > 1);
+      
+      if (j != 0 && absDiff(image[j-1].y, pixel.y)> 1 || raise_y == 1) {
+        set_dc_state(&dc, 0);
+        set_dir(&stp_2, 0);
+        enable_stp(&stp_2);
+        PT_YIELD_TIME_msec(SLEEP_TIME);
+        while(read_limit_y() == 0) {
+         // stp_1.stps_left = 0;
+          stp_2.stps_left = 50;
+         // stp_3.stps_left = 0;
+          //keep_moving = 1;
+          // Halting until the desired position is reached
+         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+        }
+        disable_stp(&stp_2);
+        stp_2.stps_left = 0;
+        stp_2.pos = 0;       
+      }
+      if ( (j != 0 && absDiff(last_pixel.x, pixel.x)> 1 || raise_x == 1) ||
+          ((j != 0 && absDiff(image[j-1].y, pixel.y)> 1 || raise_y == 1)) && i > 120 ) {
+          debug29++;
+        set_dc_state(&dc, 0);
+        set_dir(&stp_3, 0);
+        enable_stp(&stp_3);
+        PT_YIELD_TIME_msec(SLEEP_TIME);
+        while(read_limit_z() == 0) {
+         // stp_1.stps_left = 0;
+          stp_3.stps_left = 50;
+         // stp_3.stps_left = 0;
+          //keep_moving = 1;
+          // Halting until the desired position is reached
+         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
+        }
+        stp_3.stps_left = 0;
+        stp_3.pos = 0;  
+        z_pos = Z_START;
+        move(&stp_3, z_pos);
+        keep_moving = 1;
+        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+        disable_stp(&stp_3);
+      }
+      y_pos = pixel.y*STEP_Y + Y_START; debug2 = pixel.y;
+      move(&stp_2, y_pos);
+      keep_moving = 1;
+      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+      disable_stp(&stp_2);
+      
+      set_dc_state(&dc, 1); debug4 = 1;
+      z_pos = Z_START-i*STEP_Z;
+      debug14 = z_pos;
+      move(&stp_3, z_pos);
+      keep_moving = 1;
+      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+      disable_stp(&stp_3);
+      
+      last_pixel = pixel;
+      raise_x = 0; raise_y = 0;
+      debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
+    }
+  }
+  
+  set_dc_state(&dc, 0);
+  // Once done working through the image array just yield forever
+  clear_RedLED(); clear_GreenLED();
+  set_dc_state(&dc, 0);
+  // Once done working through the image array just yield forever
+  PT_YIELD_UNTIL(&pt_move, image_carved == 0); 
+  set_dc_state(&dc, 0);
+  z_pos = Z_START;
+  move(&stp_3, z_pos);
+  keep_moving = 1;
+  PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
+  disable_stp(&stp_3);
+  set_RedLED(); set_GreenLED();
+  load_start_cond();
+  //while(1) PT_YIELD(&pt_move);
+  }
+  PT_END(pt);
+};
+/*
+static PT_THREAD (protothread_move(struct pt *pt))
+{
+  PT_BEGIN(pt);
+  while(1) {
+  // Wait until the board aligned, material loaded, & the data loaded
+  PT_YIELD_UNTIL(&pt_move, data_loaded == 1);
+  PT_YIELD_UNTIL(&pt_move, material_loaded == 1); 
+  move_start = 1;
+  //set_RedLED();
+  //PT_YIELD_TIME_msec(500);
   clear_RedLED();
   clear_GreenLED();
  
@@ -302,6 +474,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
       // Check if z position should be cut
       pixel = image[j];
       debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
+      if (image_size == 20 || z_start == 171) clear_RedLED();
       if (j == 0 && !(image[0].x == 0 && image[0].y == 0 && image[0].z == 8)) clear_GreenLED();
     if (j == 1 && !(image[1].x == 0 && image[1].y == 1 && image[1].z == 50)) clear_GreenLED();
     if (j == 2 && !(image[2].x == 0 && image[2].y == 2 && image[2].z == 67)) clear_GreenLED();
@@ -451,7 +624,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
   }
   PT_END(pt);
 }
-
+*/
 /**
  * This thread runs after serial thread & ends operation when limit switches hit
  * @param pt
@@ -739,7 +912,7 @@ void main(void) {
   init_limit_switches();
   init_steppers(&stp_1, &stp_2, &stp_3);
   init_dc_motor(&dc);
-  load_start_cond();
+ // load_start_cond();
  // create_dummy_image();  
   // Schedule the threads
   while (1){
