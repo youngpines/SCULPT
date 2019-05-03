@@ -70,7 +70,8 @@ def sendPixels(ser, pixelArray, xDim, yDim, largestVal, debug):
         if (debug):
             print("Writing [ %s ]" % pixelData[:-1])
         ser.write(str.encode(pixelData))
-        time.sleep(0.015)
+        #time.sleep(0.015)
+        time.sleep(0.02)
     exit = "e\r"
     time.sleep(1)
     ser.write(str.encode(exit))
