@@ -64,10 +64,6 @@ char buffer[60];
 #define X_START 350
 #define Y_START 4500
 #define Z_START 2750
-int debug1 = 1; 
-int debug2 = 1;
-int debug3 = 1;
-int debug4 = 0;
 
 /**************** [ Global Variables ] ****************************************/
 static struct pt pt_serial, // thread to import data via UART
@@ -227,13 +223,6 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 // Sets steps for each axis and yiel3ds until the motion is complete
 // DC motor is turned on, or remains on, if the location is to be removed
 static int move_start = 0;
-static int debug10, debug11;
-static int debug12, debug13, debug14, debug15;
-static int debug16, debug17, debug18;
-static int debug19, debug20;
-static int debug21, debug22, debug23;
-static int debug24, debug25, debug26;
-static int debug27, debug28, debug29;
 uint8_t z_start = 255;
 //currently each change in x and y is 585 steps, z axis is a change of 2000
 static PT_THREAD (protothread_move(struct pt *pt))
@@ -244,10 +233,6 @@ static PT_THREAD (protothread_move(struct pt *pt))
   PT_YIELD_UNTIL(&pt_move, data_loaded == 1);
   PT_YIELD_UNTIL(&pt_move, material_loaded == 1); 
   move_start = 1;
-  //set_RedLED();
-  //PT_YIELD_TIME_msec(500);
-  //clear_RedLED();
-  //clear_GreenLED();
  
   static int x_pos = 0; static int y_pos = 0; static int z_pos = 0;
   static int i;
@@ -256,26 +241,14 @@ static PT_THREAD (protothread_move(struct pt *pt))
   static image_t pixel;
   static int raise_x = 0; static int raise_y = 0 ;
   uint8_t z_start = 255;
-  debug19 = z_start; debug20 = image_size;
-//  // Move Z to start position
-//  move(&stp_3, Z_START);
-//  keep_moving = 1;
-//  PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-//  disable_stp(&stp_3);
 
   // Find highest position in image and start there
   for (i = 0; i < z_start+1; i=i+10) {
-      debug10 = i; debug19 = z_start;
  //     PT_YIELD_TIME_msec(2000);
     for (j = 0; j < image_size; j++) {
-        debug11 = j; debug20 = image_size;
-        
-  //       PT_YIELD_TIME_msec(2000);
+ //        PT_YIELD_TIME_msec(2000);
       // Check if z position should be cut
       pixel = image[j];
-      debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
-
-      
       if (j == 0) {
         if (i == 0) last_pixel = pixel;
         else {
@@ -290,8 +263,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
       }
       if (absDiff(last_pixel.x, pixel.x) >= 1 || 
           absDiff(last_pixel.y, pixel.y) > 1  ||
-          (i+10 >= z_start && j == image_size-1)) {
-          debug15++;
+         (i+10 >= z_start && j == image_size-1)) {
         set_dc_state(&dc, 0);
         z_pos = Z_START;
         move(&stp_3, z_pos);
@@ -300,67 +272,38 @@ static PT_THREAD (protothread_move(struct pt *pt))
         disable_stp(&stp_3);
       }
       // Travel to (x, y) coordinate to drill
-      //debug24 = last_pixel.x; debug25 = pixel.x;
-      debug24 = j != 0 && absDiff(last_pixel.x, pixel.x)> 1;
-      debug25 = raise_x == 1;
       if (j != 0 && absDiff(last_pixel.x, pixel.x)> 1 || raise_x == 1) {
-          debug26++;
         set_dc_state(&dc, 0);
         set_dir(&stp_1, 0);
         enable_stp(&stp_1);
         PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_x() == 0) {
-         // stp_1.stps_left = 0;
-          stp_1.stps_left = 50;
-         // stp_3.stps_left = 0;
-          //keep_moving = 1;
-          // Halting until the desired position is reached
-         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-        }
+        while(read_limit_x() == 0) stp_1.stps_left = 50;
         stp_1.stps_left = 0;
         stp_1.pos = 0;       
       }
-      x_pos = pixel.x*STEP_X + X_START; debug1 = pixel.x;
+      x_pos = pixel.x*STEP_X + X_START;
       move(&stp_1, x_pos);
       keep_moving = 1;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_1);
-      
-      debug21 = image[j-1].y; debug22 = pixel.y;
-      debug23 = (j != 0 && absDiff(image[j-1].y, pixel.y) > 1);
       
       if (j != 0 && absDiff(image[j-1].y, pixel.y)> 1 || raise_y == 1) {
         set_dc_state(&dc, 0);
         set_dir(&stp_2, 0);
         enable_stp(&stp_2);
         PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_y() == 0) {
-         // stp_1.stps_left = 0;
-          stp_2.stps_left = 50;
-         // stp_3.stps_left = 0;
-          //keep_moving = 1;
-          // Halting until the desired position is reached
-         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-        }
+        while(read_limit_y() == 0) stp_2.stps_left = 50;
         disable_stp(&stp_2);
         stp_2.stps_left = 0;
         stp_2.pos = 0;       
       }
       if ( (j != 0 && absDiff(last_pixel.x, pixel.x)> 1 || raise_x == 1) ||
           ((j != 0 && absDiff(image[j-1].y, pixel.y)> 1 || raise_y == 1)) && i > 120 ) {
-          debug29++;
         set_dc_state(&dc, 0);
         set_dir(&stp_3, 0);
         enable_stp(&stp_3);
         PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_z() == 0) {
-         // stp_1.stps_left = 0;
-          stp_3.stps_left = 50;
-         // stp_3.stps_left = 0;
-          //keep_moving = 1;
-          // Halting until the desired position is reached
-         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-        }
+        while(read_limit_z() == 0) stp_3.stps_left = 50;
         stp_3.stps_left = 0;
         stp_3.pos = 0;  
         z_pos = Z_START;
@@ -369,15 +312,14 @@ static PT_THREAD (protothread_move(struct pt *pt))
         PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
         disable_stp(&stp_3);
       }
-      y_pos = pixel.y*STEP_Y + Y_START; debug2 = pixel.y;
+      y_pos = pixel.y*STEP_Y + Y_START;
       move(&stp_2, y_pos);
       keep_moving = 1;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_2);
       
-      set_dc_state(&dc, 1); debug4 = 1;
+      set_dc_state(&dc, 1);
       z_pos = Z_START-i*STEP_Z;
-      debug14 = z_pos;
       move(&stp_3, z_pos);
       keep_moving = 1;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
@@ -385,7 +327,6 @@ static PT_THREAD (protothread_move(struct pt *pt))
       
       last_pixel = pixel;
       raise_x = 0; raise_y = 0;
-      debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
     }
   }
   
@@ -407,230 +348,12 @@ static PT_THREAD (protothread_move(struct pt *pt))
   }
   PT_END(pt);
 };
-/*
-static PT_THREAD (protothread_move(struct pt *pt))
-{
-  PT_BEGIN(pt);
-  while(1) {
-  // Wait until the board aligned, material loaded, & the data loaded
-  PT_YIELD_UNTIL(&pt_move, data_loaded == 1);
-  PT_YIELD_UNTIL(&pt_move, material_loaded == 1); 
-  move_start = 1;
-  //set_RedLED();
-  //PT_YIELD_TIME_msec(500);
-  clear_RedLED();
-  clear_GreenLED();
- 
-  static int x_pos = 0; static int y_pos = 0; static int z_pos = 0;
-  static int i;
-  static int j;
-  static image_t last_pixel;
-  static image_t pixel;
-  static int raise_x = 0; static int raise_y = 0 ;
-  debug19 = z_start; debug20 = image_size;
-//  // Move Z to start position
-//  move(&stp_3, Z_START);
-//  keep_moving = 1;
-//  PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-//  disable_stp(&stp_3);
- set_RedLED(); set_GreenLED();
-    PT_YIELD_TIME_msec(500);
-    clear_RedLED(); clear_GreenLED();
-    PT_YIELD_TIME_msec(500);
-    set_RedLED(); set_GreenLED();
-    PT_YIELD_TIME_msec(500);
-    if (image_size == 20 || z_start == 171) clear_RedLED();
-    if (!(image[0].x == 0 && image[0].y == 0 && image[0].z == 8)) clear_GreenLED();
-    if (!(image[1].x == 0 && image[1].y == 1 && image[1].z == 50)) clear_GreenLED();
-    if (!(image[2].x == 0 && image[2].y == 2 && image[2].z == 67)) clear_GreenLED();
-    if (!(image[3].x == 0 && image[3].y == 3 && image[3].z == 0)) clear_GreenLED();
-    if (!(image[4].x == 0 && image[4].y == 4 && image[4].z == 1)) clear_GreenLED();
-    if (!(image[5].x == 1 && image[5].y == 0 && image[5].z == 90)) clear_GreenLED();
-    if (!(image[6].x == 1 && image[6].y == 1 && image[6].z == 171)) clear_GreenLED();
-    if (!(image[7].x == 1 && image[7].y == 2 && image[7].z == 151)) clear_GreenLED();
-    if (!(image[8].x == 1 && image[8].y == 3 && image[8].z == 88)) clear_GreenLED();
-    if (!(image[9].x == 1 && image[9].y == 4 && image[9].z == 108)) clear_GreenLED();
-    if (!(image[10].x == 2 && image[10].y == 0 && image[10].z == 60)) clear_GreenLED();
-    if (!(image[11].x == 2 && image[11].y == 1 && image[11].z == 124)) clear_GreenLED();
-    if (!(image[12].x == 2 && image[12].y == 2 && image[12].z == 139)) clear_GreenLED();
-    if (!(image[13].x == 2 && image[13].y == 3 && image[13].z == 119)) clear_GreenLED();
-    if (!(image[14].x == 2 && image[14].y == 4 && image[14].z == 161)) clear_GreenLED();
-    if (!(image[15].x == 3 && image[15].y == 0 && image[15].z == 0)) clear_GreenLED();
-    if (!(image[16].x == 3 && image[16].y == 1 && image[16].z == 4)) clear_GreenLED();
-    if (!(image[17].x == 3 && image[17].y == 2 && image[17].z == 39)) clear_GreenLED();
-    if (!(image[18].x == 3 && image[18].y == 3 && image[18].z == 0)) clear_GreenLED();
-    if (!(image[19].x == 3 && image[19].y == 4 && image[19].z == 27)) clear_GreenLED();
-  // Find highest position in image and start there
-  for (i = 0; i < z_start+1; i=i+10) {
-      debug10 = i; debug19 = z_start;
-    //  toggle_RedLED();
-    //  if (i > 20) set_RedLED();
-     // if (i > 80) clear_RedLED();
-      PT_YIELD_TIME_msec(2000);
-    for (j = 0; j < image_size; j++) {
-        debug11 = j; debug20 = image_size;
-    //    clear_GreenLED();
-         PT_YIELD_TIME_msec(2000);
-      // Check if z position should be cut
-      pixel = image[j];
-      debug12 = pixel.x; debug13 = pixel.y; debug14 = pixel.z;
-      if (image_size == 20 || z_start == 171) clear_RedLED();
-      if (j == 0 && !(image[0].x == 0 && image[0].y == 0 && image[0].z == 8)) clear_GreenLED();
-    if (j == 1 && !(image[1].x == 0 && image[1].y == 1 && image[1].z == 50)) clear_GreenLED();
-    if (j == 2 && !(image[2].x == 0 && image[2].y == 2 && image[2].z == 67)) clear_GreenLED();
-    if (j == 3 && !(image[3].x == 0 && image[3].y == 3 && image[3].z == 0)) clear_GreenLED();
-    if (j == 4 && !(image[4].x == 0 && image[4].y == 4 && image[4].z == 1)) clear_GreenLED();
-    if (j == 5 && !(image[5].x == 1 && image[5].y == 0 && image[5].z == 90)) clear_GreenLED();
-    if (j == 6 && !(image[6].x == 1 && image[6].y == 1 && image[6].z == 171)) clear_GreenLED();
-    if (j == 7 && !(image[7].x == 1 && image[7].y == 2 && image[7].z == 151)) clear_GreenLED();
-    if (j == 8 && !(image[8].x == 1 && image[8].y == 3 && image[8].z == 88)) clear_GreenLED();
-    if (j == 9 && !(image[9].x == 1 && image[9].y == 4 && image[9].z == 108)) clear_GreenLED();
-    if (j == 10 && !(image[10].x == 2 && image[10].y == 0 && image[10].z == 60)) clear_GreenLED();
-    if (j == 11 && !(image[11].x == 2 && image[11].y == 1 && image[11].z == 124)) clear_GreenLED();
-    if (j == 12 && !(image[12].x == 2 && image[12].y == 2 && image[12].z == 139)) clear_GreenLED();
-    if (j == 13 && !(image[13].x == 2 && image[13].y == 3 && image[13].z == 119)) clear_GreenLED();
-    if (j == 14 && !(image[14].x == 2 && image[14].y == 4 && image[14].z == 161)) clear_GreenLED();
-    if (j == 15 && !(image[15].x == 3 && image[15].y == 0 && image[15].z == 0)) clear_GreenLED();
-    if (j == 16 && !(image[16].x == 3 && image[16].y == 1 && image[16].z == 4)) clear_GreenLED();
-    if (j == 17 && !(image[17].x == 3 && image[17].y == 2 && image[17].z == 39)) clear_GreenLED();
-    if (j == 18 && !(image[18].x == 3 && image[18].y == 3 && image[18].z == 0)) clear_GreenLED();
-    if (j == 19 && !(image[19].x == 3 && image[19].y == 4 && image[19].z == 27)) clear_GreenLED();
-      if (j == 0) {
-          if (i == 0) last_pixel = pixel;
-          else {
-              raise_y = 1; 
-              raise_x = 1;
-          }
-      }
-      else {
-        if (absDiff(image[j-1].y, pixel.y)> 1) raise_y = 1;
-        if (absDiff(last_pixel.x, pixel.x)> 1) raise_x = 1;
-      }
-      debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
-      if (pixel.z <= i) continue; 
-      set_GreenLED();
-      if (absDiff(last_pixel.x, pixel.x) >= 1 || absDiff(last_pixel.y, pixel.y) > 1  ||
-          (i == z_start && j == 0)) {
-          debug15++;
-        set_dc_state(&dc, 0);
-        z_pos = Z_START;
-        move(&stp_3, z_pos);
-        keep_moving = 1;
-        PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-        disable_stp(&stp_3);
-      }
-      // Travel to (x, y) coordinate to drill
-      //debug24 = last_pixel.x; debug25 = pixel.x;
-      debug24 = j != 0 && absDiff(last_pixel.x, pixel.x)> 1;
-      debug25 = raise_x == 1;
-      if (raise_x == 1) {
-          debug26++;
-        set_dc_state(&dc, 0);
-        set_dir(&stp_1, 0);
-        enable_stp(&stp_1);
-        PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_x() == 0) {
-         // stp_1.stps_left = 0;
-          stp_1.stps_left = 50;
-         // stp_3.stps_left = 0;
-          //keep_moving = 1;
-          // Halting until the desired position is reached
-         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-        }
-        stp_1.stps_left = 0;
-        stp_1.pos = 0;       
-      }
-      x_pos = pixel.x*STEP_X + X_START; debug1 = pixel.x;
-      move(&stp_1, x_pos);
-      keep_moving = 1;
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-      disable_stp(&stp_1);
-      
-      debug21 = image[j-1].y; debug22 = pixel.y;
-      if (raise_y == 1) {
-          debug23++;
-        set_dc_state(&dc, 0);
-        set_dir(&stp_2, 0);
-        enable_stp(&stp_2);
-        PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_y() == 0) {
-         // stp_1.stps_left = 0;
-          stp_2.stps_left = 50;
-         // stp_3.stps_left = 0;
-          //keep_moving = 1;
-          // Halting until the desired position is reached
-         // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-        }
-        disable_stp(&stp_2);
-        stp_2.stps_left = 0;
-        stp_2.pos = 0;       
-      }
-      if ( raise_x == 1 || (raise_y == 1 && i > 120) ) {
-        debug29++;
-        if (stp_2.pos < Y_START) {
-          set_dc_state(&dc, 0);
-          set_dir(&stp_3, 0);
-          enable_stp(&stp_3);
-          PT_YIELD_TIME_msec(SLEEP_TIME);
-          while(read_limit_z() == 0) {
-           // stp_1.stps_left = 0;
-            stp_3.stps_left = 50;
-           // stp_3.stps_left = 0;
-           //keep_moving = 1;
-           // Halting until the desired position is reached
-          // PT_YIELD_UNTIL(&pt_align, keep_moving == 0);
-          }
-          stp_3.stps_left = 0;
-          stp_3.pos = 0;  
-          z_pos = Z_START;
-          move(&stp_3, z_pos);
-          keep_moving = 1;
-          PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-          disable_stp(&stp_3);
-        }
-      }
-      y_pos = pixel.y*STEP_Y + Y_START; debug2 = pixel.y;
-      move(&stp_2, y_pos);
-      keep_moving = 1;
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-      disable_stp(&stp_2);
-      
-      set_dc_state(&dc, 1); debug4 = 1;
-      z_pos = Z_START-i*STEP_Z;
-      //debug14 = z_pos;
-      move(&stp_3, z_pos);
-      keep_moving = 1;
-      PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-      disable_stp(&stp_3);
-      
-      last_pixel = pixel;
-      raise_x = 0; raise_y = 0;
-      debug16 = last_pixel.x; debug17 = last_pixel.y; debug18 = last_pixel.z;
-    }
-  }
-  clear_RedLED(); clear_GreenLED();
-  set_dc_state(&dc, 0);
-  // Once done working through the image array just yield forever
-  PT_YIELD_UNTIL(&pt_move, image_carved == 0); 
-  set_dc_state(&dc, 0);
-  z_pos = Z_START;
-  move(&stp_3, z_pos);
-  keep_moving = 1;
-  PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
-  disable_stp(&stp_3);
-  set_RedLED(); set_GreenLED();
-  load_start_cond();
-  //while(1) PT_YIELD(&pt_move);
-  }
-  PT_END(pt);
-}
-*/
+
 /**
  * This thread runs after serial thread & ends operation when limit switches hit
  * @param pt
  * @return 
  */
-static int debug40 = 0;
 static PT_THREAD (protothread_align(struct pt *pt))
 {
   PT_BEGIN(pt);
@@ -687,7 +410,7 @@ static PT_THREAD (protothread_align(struct pt *pt))
 
     // All alignments done, Wait for user to confirm material is loaded
     // Then use other threads until complete
-    aligned = 1; debug40++;
+    aligned = 1;
     while(read_mat_load() == 0); //do nothing but wait
     clear_RedLED(); clear_GreenLED();
     // Realigning after material loaded only at the start of execution
@@ -734,8 +457,6 @@ static PT_THREAD (protothread_align(struct pt *pt))
   PT_END(pt);
 } // alignment thread
 
-
-static int debug30, debug31, debug32, debug33;
 //=== Serial thread =================================================
 static PT_THREAD (protothread_serial(struct pt *pt))
 {
@@ -743,7 +464,6 @@ static PT_THREAD (protothread_serial(struct pt *pt))
   static char cmd[1];
   static int x_val, y_val, z_val;
   static int count = 0;
-  debug30 = count;
   while(1) { 
     set_GreenLED();
     // Send the prompt via DMA to serial
@@ -759,7 +479,6 @@ static PT_THREAD (protothread_serial(struct pt *pt))
     // in this case, when <enter> is pushed
     // now parse the string
     sscanf(PT_term_buffer, "%s %d %d %d", cmd, &x_val, &y_val, &z_val);
-    debug19 = image_size; debug20 = z_start;
     switch(cmd[0]) {
     case 's':
       image_size = x_val*y_val;  
@@ -769,14 +488,11 @@ static PT_THREAD (protothread_serial(struct pt *pt))
       image[count].x = x_val;
       image[count].y = y_val;
       image[count].z = z_val;
-      debug31 = image[count].x; debug32 = image[count].y; debug33 = image[count].z;
       count++;
-      debug30 = count;
       toggle_RedLED();
       break;
     case 'e': // All data loaded, Terminate signal sent
-      if (count == 45*381) clear_GreenLED();
-      debug30 = count;
+      if (count == image_size) clear_GreenLED();
       data_loaded = 1;
       PT_YIELD_UNTIL(&pt_serial, data_loaded == 0);
       count = 0;
@@ -784,7 +500,6 @@ static PT_THREAD (protothread_serial(struct pt *pt))
     default: // Do nothing                  
       break;
     }
-    //PT_YIELD(&pt_serial);
     // never exit while
   } // END WHILE(1) 
   PT_END(pt);
