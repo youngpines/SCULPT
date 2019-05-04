@@ -102,9 +102,9 @@ def main():
     parser.add_argument("-b", action="store", dest="baud", \
             help="Baudrate the  send pixels at", default=9600)
     parser.add_argument("-x", action="store", dest="xdim", \
-            type=int, default=38, help="X dimension size")
+            type=int, default=39, help="X dimension size")
     parser.add_argument("-y", action="store", dest="ydim", \
-            type=int, default=45, help="Y dimension size")
+            type=int, default=47, help="Y dimension size")
     parser.add_argument("-d", action="store_false", default=True, dest="debug",
             help="Turn Debug Mode Off")
     r = parser.parse_args()
