@@ -50,7 +50,7 @@ char buffer[60];
 //585
 #define STEP_Y 267
 //8
-#define STEP_Z 9
+#define STEP_Z 5
 #define SLEEP_TIME 2
 
 // Stepping Frequency of X & Y, every 1 msec
@@ -61,9 +61,9 @@ char buffer[60];
 #define X_LIMIT 7030
 #define Y_LIMIT 21000
 #define Z_LIMIT 8000
-#define X_START 350
-#define Y_START 4500
-#define Z_START 2750
+#define X_START 0
+#define Y_START 3000
+#define Z_START 1750
 
 /**************** [ Global Variables ] ****************************************/
 static struct pt pt_serial, // thread to import data via UART

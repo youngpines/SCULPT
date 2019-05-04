@@ -1,5 +1,6 @@
 #ifndef GPIO_H
 #define GPIO_H
+// #define TFT
 typedef unsigned char uint8_t;
 
 // Structs
