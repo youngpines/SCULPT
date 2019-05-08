@@ -193,7 +193,7 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
         if (stp_3.pos == Z_LIMIT) disable_stp(&stp_3);
     } else {
         stp_3.pos--;
-        if (stp_3.pos == 0) disable_stp(&stp_3);
+        //if (stp_3.pos == 0) disable_stp(&stp_3);
     }
     if (stp_3.stps_left == 0) disable_stp(&stp_3);
   } else if (x_enable && stp_1.stps_left > 0) {
@@ -249,7 +249,11 @@ static PT_THREAD (protothread_move(struct pt *pt))
  //        PT_YIELD_TIME_msec(2000);
       // Check if z position should be cut
       pixel = image[j];
-      if (i == 0 && j == 0) last_pixel = pixel;
+      if (i == 15 && j == 0) last_pixel = pixel;
+      if (j == 0) {
+          raise_x = 1;
+          raise_y = 1;
+      }
        if (pixel.z <= i) { 
           if (absDiff(image[j-1].y, pixel.y)> 1) raise_y = 1;
           if (absDiff(last_pixel.x, pixel.x)> 1) raise_x = 1;
@@ -271,7 +275,10 @@ static PT_THREAD (protothread_move(struct pt *pt))
         set_dir(&stp_1, 0);
         enable_stp(&stp_1);
         PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_x() == 0) stp_1.stps_left = 50;
+        while(read_limit_x() == 0) {
+            stp_1.stps_left = 50;
+            stp_1.pos = 50;
+        }
         stp_1.stps_left = 0;
         stp_1.pos = 0;       
       }
@@ -286,21 +293,26 @@ static PT_THREAD (protothread_move(struct pt *pt))
         set_dir(&stp_2, 0);
         enable_stp(&stp_2);
         PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_y() == 0) stp_2.stps_left = 50;
+        while(read_limit_y() == 0) {
+            stp_2.stps_left = 50;
+            stp_2.pos = 50;
+        }
         disable_stp(&stp_2);
         stp_2.stps_left = 0;
         stp_2.pos = 0;       
       }
-      if ( raise_x == 1 || (raise_y == 1 && i > 120) ) {
+      if ( raise_x == 1 || 
+         ((raise_y == 1 || absDiff(image[j-1].y, pixel.y)> 1) && (i > 120 || i < 30 || j%2 == 0)) ) {
         set_dc_state(&dc, 0);
         set_dir(&stp_3, 0);
         enable_stp(&stp_3);
         PT_YIELD_TIME_msec(SLEEP_TIME);
-        while(read_limit_z() == 0) stp_3.stps_left = 50;
-        disable_stp(&stp_3);
+        while(read_limit_z() == 0) {
+            stp_3.stps_left = 50;
+            stp_3.pos = 50;
+        }
         stp_3.stps_left = 0;
         stp_3.pos = 0; 
-        PT_YIELD(&pt_move);
         z_pos = Z_START;
         move(&stp_3, z_pos);
         keep_moving = 1;

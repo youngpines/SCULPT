@@ -16,7 +16,7 @@ import sys
 
 # Opening up the target image
 im = \
-Image.open('/home/ho-jung/Desktop/Junior/SCULPT/TestImages/fish.png')
+Image.open('/home/ho-jung/Desktop/Junior/SCULPT/TestImages/crylaugh.png')
 #displaying the target image for checking function
 #im = im.rotate(90)
 im.show()
@@ -25,6 +25,7 @@ im.show()
 grey = im.convert('L')
 size = 45, 38 
 #size = 5, 4
+#size = 38, 38
 grey = grey.resize(size,Image.LANCZOS)
 np.set_printoptions(threshold=sys.maxsize)
 #displaying the final to ensure it worked well
