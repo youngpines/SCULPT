@@ -16,7 +16,7 @@ import sys
 
 # Opening up the target image
 im = \
-Image.open('/home/ho-jung/Desktop/Junior/SCULPT/TestImages/kermit.png')
+Image.open('/home/ho-jung/Desktop/Junior/SCULPT/TestImages/crylaugh.png')
 #displaying the target image for checking function
 #im = im.rotate(90)
 im.show()
