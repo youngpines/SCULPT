@@ -1,6 +1,5 @@
 #ifndef GPIO_H
 #define GPIO_H
-//#define TFT
 typedef unsigned char uint8_t;
 
 /********************* [ Structs ] ********************************************/
@@ -53,14 +52,6 @@ extern volatile uint8_t z_enable;
 #define set_GreenLED()   mPORTBSetBits(GREEN_LED_PIN)
 #define clear_GreenLED() mPORTBClearBits(GREEN_LED_PIN)
 #define toggle_GreenLED() mPORTBToggleBits(GREEN_LED_PIN)
-
-#define TFT_LED BIT_15
-#define init_tftLED()                 \
-  mPORTBSetPinsDigitalOut(TFT_LED); \
-  mPORTBClearBits(TFT_LED)
-#define set_tftLED()   mPORTBSetBits(TFT_LED)
-#define clear_tftLED() mPORTBClearBits(TFT_LED)
-#define toggle_tftLED() mPORTBToggleBits(TFT_LED)
 
 void init_limit_switches(void);
 void init_steppers(stepper_t* stp_1, stepper_t* stp_2, stepper_t* stp_3);
