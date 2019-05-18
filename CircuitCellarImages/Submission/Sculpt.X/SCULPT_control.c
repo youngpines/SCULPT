@@ -6,18 +6,6 @@
 #ifndef _SUPPRESS_PLIB_WARNING
 #define _SUPPRESS_PLIB_WARNING
 #endif
-//////////////////////////////////////
-#ifdef TFT
-// graphics libraries
-#include "tft_master.h"
-#include "tft_gfx.h"
-// need for rand function
-#include <stdlib.h>
-// string buffer
-char buffer[60];
-#endif // TFT
-////////////////////////////////////
-
 ////////////////////////////////////
 
 /*Pinout for the PIC for reference*/
@@ -44,23 +32,21 @@ char buffer[60];
 //RB15  -   // dc motor enable
 
 /*********************** [ Constants ] ****************************************/
-// Image Size, max seems to be around 175 x 175
+// Image Size, very very max seems to be around 175 x 175, capped at 100 x 100
 #define MAX_IMAGE_SIZE 100*100
-#define STEP_X 180
-//585
-#define STEP_Y 267
-//8
-#define STEP_Z 5
+// Num ms driver waits after enable turned back on
 #define SLEEP_TIME 2
-
-// Stepping Frequency of X & Y, every 1 msec
+// Stepper timer periods
 #define XY_PERIOD  24000
-// Stepping Frequency of X & Y, every 6 msec
-#define Z_PERIOD 300000
-
+// Step sizes for each stepper
+#define STEP_X 180
+#define STEP_Y 267
+#define STEP_Z 5
+// Limits of movement for each stepper
 #define X_LIMIT 7030
 #define Y_LIMIT 21000
 #define Z_LIMIT 8000
+// Starting positions for each stepper
 #define X_START 0
 #define Y_START 3000
 #define Z_START 1750
@@ -71,9 +57,6 @@ static struct pt pt_serial, // thread to import data via UART
                  pt_align;  // thread to align via limit switches
 // The following threads are necessary for UART control
 static struct pt pt_input, pt_output, pt_DMA_output;
-#ifdef TFT
-static struct pt pt_tft;
-#endif // TFT
 
 // Data array holding pixelated info of image
 typedef unsigned char uint8_t;
@@ -84,90 +67,18 @@ typedef struct {
 } image_t;
 int image_size = 0;
 image_t image[MAX_IMAGE_SIZE] = {0};
-        /*
-{
-{0, 0, 8}, 
-{ 0,  1, 50}, 
-{ 0,  2, 67}, 
-{0, 3, 0}, 
-{0, 4, 1}, 
-{ 1,  0, 90}, 
-{  1,   1, 171}, 
-{  1,   2, 151}, 
-{ 1,  3, 88}, 
-{  1,   4, 108}, 
-{ 2,  0, 60}, 
-{  2,   1, 124}, 
-{  2,   2, 139}, 
-{  2,   3, 119}, 
-{  2,   4, 161}, 
-{3, 0, 0}, 
-{3, 1, 4}, 
-{ 3,  2, 39}, 
-{3, 3, 0}, 
-{ 3,  4, 27}};
-*/
-/*
-{
-{0, 0, 255}, 
-{0, 1, 255}, 
-{0, 2, 15}, 
-{0, 3, 0}, 
-{0, 4, 0}, 
-{0, 5, 0}, 
-{0, 6, 255}, 
-{0, 7, 255}, 
-{0, 8, 255}, 
-{0, 9, 255}, 
-{1, 0, 255}, 
-{1, 1, 15}, 
-{1, 2, 0}, 
-{1, 3, 0}, 
-{1, 4, 0}, 
-{1, 5, 0}, 
-{1, 6, 0}, 
-{1, 7, 255}, 
-{1, 8, 0}, 
-{1, 9, 0}, 
-{2, 0, 255}, 
-{2, 1, 0}, 
-{2, 2, 0}, 
-{2, 3, 0}, 
-{2, 4, 0}, 
-{2, 5, 0}, 
-{2, 6, 0}, 
-{2, 7, 0}, 
-{2, 8, 0}, 
-{2, 9, 0}};
-*/
-
-
+ 
 //state variables for the process
-volatile uint8_t keep_moving = 0;    //a state to determine if there are steps remaining to move
-volatile uint8_t x_enable = 0;
-volatile uint8_t y_enable = 0;
-volatile uint8_t z_enable = 0;
-volatile static int image_carved = 0;   //a state variable to determine if the image is carved yet or not
-volatile static int data_loaded = 0;    //a state variable to determine if the image is loaded or not
-volatile static int aligned = 0;        // a state variable to determine if the device is aligned or not
-volatile static int material_loaded = 0;// a state that determines if material has been loaded into the device
+volatile uint8_t keep_moving = 0;        // Determine if steps remaining to move
+volatile uint8_t x_enable = 0;           // Enables x stepper
+volatile uint8_t y_enable = 0;           // Enables y stepper
+volatile uint8_t z_enable = 0;           // Enables z stepper
+volatile static int image_carved = 0;    // Determines if image is carved or not
+volatile static int data_loaded = 0;     // Determine if data loaded or not
+volatile static int aligned = 0;         // Determine if device aligned or not
+volatile static int material_loaded = 0; // Determines if material loaded
 
-void create_dummy_image() {
-//    int i, j, z;
-//    for (i = 0; i < X_DIM; i++) {
-//        for (j = 0; j < Y_DIM; j++) {
-//            if (i == 0) image[i][j] = 3;
-//            if (i == 1) image[i][j] = 2;
-//            if (i == 2) image[i][j] = 1;
-//            if (i == 3) image[i][j] = 0;
-//            
-//        }
-//    }
-
-
-    //clear_GreenLED();
-    data_loaded = 1;
-}
+// Start conditions for each image carving
 void load_start_cond(void)
 {
   data_loaded     = 0;        
@@ -176,8 +87,6 @@ void load_start_cond(void)
   aligned         = 0;
   material_loaded = 0;
 }
-
-volatile int debug = 0;
 
 /************************* [ ISRs ] *******************************************/
 // == Timer 2 ISR =====================================================
@@ -189,25 +98,27 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
     toggle_stp(&stp_3);
     stp_3.stps_left--;
     if (stp_3.dir_move == 1) {
-        stp_3.pos++;
-        if (stp_3.pos == Z_LIMIT) disable_stp(&stp_3);
-    } else {
-        stp_3.pos--;
-        //if (stp_3.pos == 0) disable_stp(&stp_3);
-    }
-    if (stp_3.stps_left == 0) disable_stp(&stp_3);
+        stp_3.pos++;                                   // Positive movement
+        if (stp_3.pos == Z_LIMIT) disable_stp(&stp_3); // Disable if at limit
+    } else stp_3.pos--;                                // Negative movement
+    if (stp_3.stps_left == 0) disable_stp(&stp_3);     // Disable if at limit
+  // Move X next
   } else if (x_enable && stp_1.stps_left > 0) {
     toggle_stp(&stp_1);
     stp_1.stps_left--;
-    if (stp_1.dir_move == 1) stp_1.pos++;
-    else stp_1.pos--;
-    if (stp_1.stps_left == 0) disable_stp(&stp_1);
+    if (stp_1.dir_move == 1) {
+        stp_1.pos++;                                   // Positive movement
+        if (stp_1.pos == X_LIMIT) disable_stp(&stp_1); // Disable if at limit
+    } else stp_1.pos--;                                // Negative movement
+    if (stp_1.stps_left == 0) disable_stp(&stp_1);     // Disable if at limit
   } else if (y_enable && stp_2.stps_left > 0) {
     toggle_stp(&stp_2);
     stp_2.stps_left--;
-    if (stp_2.dir_move == 1) stp_2.pos++;
-    else stp_2.pos--;
-    if (stp_2.stps_left == 0) disable_stp(&stp_2);
+    if (stp_2.dir_move == 1) {
+        stp_2.pos++;                                   // Positive movement
+        if (stp_2.pos == Y_LIMIT) disable_stp(&stp_2); // Disable if at limit
+    } else stp_2.pos--;                                // Negative movement
+    if (stp_2.stps_left == 0) disable_stp(&stp_2);     // Disable if at limit
   }
 
   // Checking if all motors are done stepping, and if so then updating the state
@@ -220,7 +131,7 @@ void __ISR(_TIMER_2_VECTOR, ipl2) Timer2Handler(void)
 
 // === Move Thread =================================================
 // Finds next location to travel to & calculates the steps needed to get there
-// Sets steps for each axis and yiel3ds until the motion is complete
+// Sets steps for each axis and yields until the motion is complete
 // DC motor is turned on, or remains on, if the location is to be removed
 static int move_start = 0;
 uint8_t z_start = 255;
@@ -244,21 +155,24 @@ static PT_THREAD (protothread_move(struct pt *pt))
 
   // Find highest position in image and start there
   for (i = 0; i < z_start+1; i=i+10) {
- //     PT_YIELD_TIME_msec(2000);
     for (j = 0; j < image_size; j++) {
- //        PT_YIELD_TIME_msec(2000);
       // Check if z position should be cut
       pixel = image[j];
+      // If at first image pixel, make the pixels the same
       if (i == 15 && j == 0) last_pixel = pixel;
+      // Encountered a new row, have to recalibrate
       if (j == 0) {
           raise_x = 1;
           raise_y = 1;
       }
+      // Skip this pixel, greyscale value is too low to cut
        if (pixel.z <= i) { 
+          // Check if x or y axes should be raised
           if (absDiff(image[j-1].y, pixel.y)> 1) raise_y = 1;
           if (absDiff(last_pixel.x, pixel.x)> 1) raise_x = 1;
           continue; 
       }
+      // If at new row or skipping over more than y dim pixel, raise Z
       if (absDiff(last_pixel.x, pixel.x) >= 1 || 
           absDiff(last_pixel.y, pixel.y) > 1  ||
          (i+10 >= z_start && j == image_size-1)) {
@@ -270,6 +184,7 @@ static PT_THREAD (protothread_move(struct pt *pt))
         disable_stp(&stp_3);
       }
       // Travel to (x, y) coordinate to drill
+      // If more than 1 row difference (i.e. new row or skip row), recalib xdim
       if (j != 0 && absDiff(last_pixel.x, pixel.x)> 1 || raise_x == 1) {
         set_dc_state(&dc, 0);
         set_dir(&stp_1, 0);
@@ -282,12 +197,14 @@ static PT_THREAD (protothread_move(struct pt *pt))
         stp_1.stps_left = 0;
         stp_1.pos = 0;       
       }
+      // Move x to correct position
       x_pos = pixel.x*STEP_X + X_START;
       move(&stp_1, x_pos);
       keep_moving = 1;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_1);
       
+      // If carving new row, recalibrate ydim
       if (j != 0 && absDiff(image[j-1].y, pixel.y)> 1 || raise_y == 1) {
         set_dc_state(&dc, 0);
         set_dir(&stp_2, 0);
@@ -301,8 +218,11 @@ static PT_THREAD (protothread_move(struct pt *pt))
         stp_2.stps_left = 0;
         stp_2.pos = 0;       
       }
+      // Once y dim is recalibrated, recalibrate Z axis for every new row or 
+      // when more than x or y pixels are skipped over
+      // If Z level is more than 120 or less than 30, calibrate every new row
       if ( raise_x == 1 || 
-         ((raise_y == 1 || absDiff(image[j-1].y, pixel.y)> 1) && (i > 120 || i < 30 || j%2 == 0)) ) {
+         ((raise_y == 1 || absDiff(image[j-1].y, pixel.y)> 1) && (i > 120 || i < 30)) ) {
         set_dc_state(&dc, 0);
         set_dir(&stp_3, 0);
         enable_stp(&stp_3);
@@ -319,12 +239,14 @@ static PT_THREAD (protothread_move(struct pt *pt))
         PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
         disable_stp(&stp_3);
       }
+      // Now, carve Y position
       y_pos = pixel.y*STEP_Y + Y_START;
       move(&stp_2, y_pos);
       keep_moving = 1;
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_2);
       
+      // Start DC motor to spin end mill and drill down!
       set_dc_state(&dc, 1);
       z_pos = Z_START-i*STEP_Z;
       move(&stp_3, z_pos);
@@ -332,26 +254,26 @@ static PT_THREAD (protothread_move(struct pt *pt))
       PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
       disable_stp(&stp_3);
       
+      // Update last tracked pixel
       last_pixel = pixel;
       raise_x = 0; raise_y = 0;
     }
   }
-  
+  // Image is done carved, turn off DC motor & turn off LEDs
   set_dc_state(&dc, 0);
-  // Once done working through the image array just yield forever
   clear_RedLED(); clear_GreenLED();
-  set_dc_state(&dc, 0);
   // Once done working through the image array just yield forever
   PT_YIELD_UNTIL(&pt_move, image_carved == 0); 
   set_dc_state(&dc, 0);
+  // Raise Z position to start position so material can be take out
   z_pos = Z_START;
   move(&stp_3, z_pos);
   keep_moving = 1;
   PT_YIELD_UNTIL(&pt_move, keep_moving == 0);
   disable_stp(&stp_3);
+  // Return to start conditions and turn on LEDs
   set_RedLED(); set_GreenLED();
   load_start_cond();
-  //while(1) PT_YIELD(&pt_move);
   }
   PT_END(pt);
 };
@@ -369,7 +291,6 @@ static PT_THREAD (protothread_align(struct pt *pt))
     // Wait for the initial data from serial thread before aligning
     PT_YIELD_UNTIL(&pt_align, data_loaded == 1);
     // Align on the y axis first
-    //2set_RedLED();
     while(read_limit_y() == 0) {
       set_dir(&stp_2, 0);
       enable_stp(&stp_2);
@@ -512,94 +433,6 @@ static PT_THREAD (protothread_serial(struct pt *pt))
   PT_END(pt);
 } // serial thread
 
-
-#ifdef TFT
-static PT_THREAD (protothread_tft(struct pt *pt))
-{
-    PT_BEGIN(pt);
-     tft_setCursor(0, 0);
-     tft_setTextColor(ILI9340_WHITE);  tft_setTextSize(1);
-     tft_writeString("Time in seconds since boot\n");
-      while(1) {
-        // yield time 1 second
-        PT_YIELD_TIME_msec(1000) ;
-        // draw sys_time
-        tft_fillRoundRect(0, 50, 320, 200, 1, ILI9340_BLACK);// x,y,w,h,radius,color
-        tft_setCursor(0, 10);
-        tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-        tft_writeString(buffer);
-
-        if (debug3) {
-            tft_setCursor(100, 30);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"toggle");
-            tft_writeString(buffer);
-        }
-        if (aligned) {
-            tft_setCursor(0, 30);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"aligned %d", debug40);
-            tft_writeString(buffer);
-        }
-//        if (debug3) {
-//            tft_setCursor(60, 70);
-//            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-//            sprintf(buffer,"y %d z %d x %d", debug100, debug101, debug102);
-//            tft_writeString(buffer);
-//        }
-        if (debug3 != 1) {
-            tft_setCursor(0, 70);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"x %u y %u z %u d %c", debug1, debug2, debug3, debug4);
-            tft_writeString(buffer);
-        }
-        if (1) {
-            tft_setCursor(0, 50);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"moved res %d zst %d isz %d", debug15, debug19, debug20);
-            //sprintf(buffer,"moved zst %d isz %d c %d", debug19, debug20, debug30);
-            tft_writeString(buffer);
-            tft_setCursor(0, 90);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"i %d j %d", debug10, debug11);
-            //sprintf(buffer,"x %d y %d z %d", debug31, debug32, debug33);
-            tft_writeString(buffer);
-            tft_setCursor(0, 110);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"x: pos %d, s %d, d %d", stp_1.pos, stp_1.stps_left, stp_1.dir_move);
-            tft_writeString(buffer);
-            tft_setCursor(0, 130);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"y: pos %d, s %d, d %d", stp_2.pos, stp_2.stps_left, stp_2.dir_move);
-            tft_writeString(buffer);
-            tft_setCursor(0, 150);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"z: pos %d, s %d, d %d", stp_3.pos, stp_3.stps_left, stp_3.dir_move);
-            tft_writeString(buffer);
-            tft_setCursor(0, 170);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"pix x %d y %d z %d", debug12, debug13, debug14);
-            tft_writeString(buffer);
-            tft_setCursor(0,190);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"last x %d y %d z %d", debug16, debug17, debug18);
-            tft_writeString(buffer);
-            tft_setCursor(0,210);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            // 21 22 23
-            sprintf(buffer,"y-1 %d y %d r %d z %d", debug21, debug22, debug23, debug29);
-            tft_writeString(buffer);
-             tft_setCursor(0,230);
-            tft_setTextColor(ILI9340_YELLOW); tft_setTextSize(2);
-            sprintf(buffer,"dat %d a %d m %d k %d", data_loaded, aligned, material_loaded, keep_moving);
-            tft_writeString(buffer);
-        }
-        // NEVER exit while
-      } // END WHILE(1)
-  PT_END(pt);
-} // timer thread
-#endif //TFT
-
 /************************** [ Main ] ******************************************/
 
 void main(void) { 
@@ -618,31 +451,16 @@ void main(void) {
  // PT_INIT(&pt_serial);
   PT_INIT(&pt_move);
   PT_INIT(&pt_align);
-  
-#ifdef TFT
-  PT_INIT(&pt_tft);
-  // Init everything else
-   // init the display
-  tft_init_hw();
-  tft_begin();
-  tft_fillScreen(ILI9340_BLACK);
-  //240x320 vertical display
-  tft_setRotation(1); // Use tft_setRotation(1) for 320x240
- // init_tftLED();
-#endif // TFT
+ 
   init_RedLED(); init_GreenLED();
   init_limit_switches();
   init_steppers(&stp_1, &stp_2, &stp_3);
   init_dc_motor(&dc);
- // load_start_cond();
- // create_dummy_image();  
+
   // Schedule the threads
   while (1){
       PT_SCHEDULE(protothread_serial(&pt_serial));
       PT_SCHEDULE(protothread_move(&pt_move)); 
       PT_SCHEDULE(protothread_align(&pt_align)); 
-#ifdef TFT
-      PT_SCHEDULE(protothread_tft(&pt_tft));
-#endif // TFT
   }
 } // main
