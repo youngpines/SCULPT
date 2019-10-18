@@ -448,7 +448,7 @@ void main(void) {
   // === setup system wide interrupts  ========
   INTEnableSystemMultiVectoredInt();
   // init the threads
- // PT_INIT(&pt_serial);
+  PT_INIT(&pt_serial);
   PT_INIT(&pt_move);
   PT_INIT(&pt_align);
  
